@@ -83,7 +83,7 @@ module BSON
     #   (default is canonical extended JSON)
     #
     # @return [ Hash ] The extended json representation.
-    def as_extended_json(**options)
+    def as_extended_json(**_options)
       { "$oid" => to_s }
     end
 

@@ -77,14 +77,14 @@ module BSON
           else
             utc_time -= utc_time.usec.divmod(1000).last.to_r / 1000000
           end
-          {'$date' => utc_time.strftime('%Y-%m-%dT%H:%M:%S.%LZ')}
+          { '$date' => utc_time.strftime('%Y-%m-%dT%H:%M:%S.%LZ') }
         else
-          {'$date' => utc_time.strftime('%Y-%m-%dT%H:%M:%SZ')}
+          { '$date' => utc_time.strftime('%Y-%m-%dT%H:%M:%SZ') }
         end
       else
         sec = utc_time._bson_to_i
         msec = utc_time.usec.divmod(1000).first
-        {'$date' => {'$numberLong' => (sec * 1000 + msec).to_s}}
+        { '$date' => { '$numberLong' => (sec * 1000 + msec).to_s } }
       end
     end
 

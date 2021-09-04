@@ -69,8 +69,8 @@ module BSON
     #   extended JSON representation.
     #
     # @return [ Hash ] The extended json representation.
-    def as_extended_json(**options)
-      {'$dbPointer' => { "$ref" => ref, '$id' => id.as_extended_json }}
+    def as_extended_json(**_options)
+      { '$dbPointer' => { "$ref" => ref, '$id' => id.as_extended_json } }
     end
 
     # Encode the DBPointer.

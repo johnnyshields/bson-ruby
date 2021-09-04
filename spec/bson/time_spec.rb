@@ -26,7 +26,7 @@ describe Time do
 
       context "when the time has no microseconds" do
 
-        let(:obj)  { Time.utc(2012, 1, 1, 0, 0, 0) }
+        let(:obj) { Time.utc(2012, 1, 1, 0, 0, 0) }
         let(:bson) { [ (obj.to_i * 1000) + (obj.usec / 1000) ].pack(BSON::Int64::PACK) }
 
         it_behaves_like "a serializable bson element"
@@ -35,7 +35,7 @@ describe Time do
 
       context "when the time has microseconds" do
 
-        let(:obj)  { Time.at(Time.utc(2014, 03, 22, 18, 05, 05).to_i, 505000).utc }
+        let(:obj) { Time.at(Time.utc(2014, 03, 22, 18, 05, 05).to_i, 505000).utc }
         let(:bson) { [ (obj.to_i * 1000) + (obj.usec / 1000) ].pack(BSON::Int64::PACK) }
 
         it_behaves_like "a serializable bson element"
@@ -45,7 +45,7 @@ describe Time do
 
     context "when the time precedes epoch" do
 
-      let(:obj)  { Time.utc(1969, 1, 1, 0, 0, 0) }
+      let(:obj) { Time.utc(1969, 1, 1, 0, 0, 0) }
       let(:bson) { [ (obj.to_f * 1000).to_i ].pack(BSON::Int64::PACK) }
 
       it_behaves_like "a serializable bson element"
@@ -53,7 +53,7 @@ describe Time do
     end
 
     context 'when value has sub-millisecond precision' do
-      let(:obj)  { Time.utc(2012, 1, 1, 0, 0, 0, 999_999) }
+      let(:obj) { Time.utc(2012, 1, 1, 0, 0, 0, 999_999) }
 
       let(:expected_round_tripped_obj) do
         Time.utc(2012, 1, 1, 0, 0, 0, 999_000)
@@ -73,10 +73,10 @@ describe Time do
 
     context 'canonical mode' do
       context 'when value has sub-millisecond precision' do
-        let(:obj)  { Time.utc(2012, 1, 1, 0, 0, 0, 999_999) }
+        let(:obj) { Time.utc(2012, 1, 1, 0, 0, 0, 999_999) }
 
         let(:expected_serialization) do
-          {'$date' => {'$numberLong' => '1325376000999'}}
+          { '$date' => { '$numberLong' => '1325376000999' } }
         end
 
         let(:serialization) do
@@ -92,16 +92,16 @@ describe Time do
         it_behaves_like 'truncates to milliseconds when serializing'
 
         context 'when value has sub-microsecond precision' do
-          let(:obj)  { Time.utc(2012, 1, 1, 0, 0, 0, 999_999_999/1000r) }
+          let(:obj) { Time.utc(2012, 1, 1, 0, 0, 0, 999_999_999/1000r) }
 
           it_behaves_like 'truncates to milliseconds when serializing'
         end
 
         context "when the time precedes epoch" do
-          let(:obj)  { Time.utc(1960, 1, 1, 0, 0, 0, 999_999) }
+          let(:obj) { Time.utc(1960, 1, 1, 0, 0, 0, 999_999) }
 
           let(:expected_serialization) do
-            {'$date' => {'$numberLong' => '-315619199001'}}
+            { '$date' => { '$numberLong' => '-315619199001' } }
           end
 
           it_behaves_like 'truncates to milliseconds when serializing'
@@ -111,10 +111,10 @@ describe Time do
 
     context 'relaxed mode' do
       context 'when value has sub-millisecond precision' do
-        let(:obj)  { Time.utc(2012, 1, 1, 0, 0, 0, 999_999) }
+        let(:obj) { Time.utc(2012, 1, 1, 0, 0, 0, 999_999) }
 
         let(:expected_serialization) do
-          {'$date' => '2012-01-01T00:00:00.999Z'}
+          { '$date' => '2012-01-01T00:00:00.999Z' }
         end
 
         let(:serialization) do
@@ -130,16 +130,16 @@ describe Time do
         it_behaves_like 'truncates to milliseconds when serializing'
 
         context 'when value has sub-microsecond precision' do
-          let(:obj)  { Time.utc(2012, 1, 1, 0, 0, 0, 999_999_999/1000r) }
+          let(:obj) { Time.utc(2012, 1, 1, 0, 0, 0, 999_999_999/1000r) }
 
           it_behaves_like 'truncates to milliseconds when serializing'
         end
 
         context "when the time precedes epoch" do
-          let(:obj)  { Time.utc(1960, 1, 1, 0, 0, 0, 999_999) }
+          let(:obj) { Time.utc(1960, 1, 1, 0, 0, 0, 999_999) }
 
           let(:expected_serialization) do
-            {'$date' => {'$numberLong' => '-315619199001'}}
+            { '$date' => {'$numberLong' => '-315619199001'} }
           end
 
           it_behaves_like 'truncates to milliseconds when serializing'
@@ -152,7 +152,7 @@ describe Time do
 
     context 'canonical mode' do
       context 'when value has sub-millisecond precision' do
-        let(:obj)  { Time.utc(2012, 1, 1, 0, 0, 0, 999_999) }
+        let(:obj) { Time.utc(2012, 1, 1, 0, 0, 0, 999_999) }
 
         let(:expected_serialization) do
           %q`{"$date":{"$numberLong":"1325376000999"}}`
@@ -171,13 +171,13 @@ describe Time do
         it_behaves_like 'truncates to milliseconds when serializing'
 
         context 'when value has sub-microsecond precision' do
-          let(:obj)  { Time.utc(2012, 1, 1, 0, 0, 0, 999_999_999/1000r) }
+          let(:obj) { Time.utc(2012, 1, 1, 0, 0, 0, 999_999_999/1000r) }
 
           it_behaves_like 'truncates to milliseconds when serializing'
         end
 
         context "when the time precedes epoch" do
-          let(:obj)  { Time.utc(1960, 1, 1, 0, 0, 0, 999_999) }
+          let(:obj) { Time.utc(1960, 1, 1, 0, 0, 0, 999_999) }
 
           let(:expected_serialization) do
             %q`{"$date":{"$numberLong":"-315619199001"}}`
@@ -190,7 +190,7 @@ describe Time do
 
     context 'relaxed mode' do
       context 'when value has sub-millisecond precision' do
-        let(:obj)  { Time.utc(2012, 1, 1, 0, 0, 0, 999_999) }
+        let(:obj) { Time.utc(2012, 1, 1, 0, 0, 0, 999_999) }
 
         let(:expected_serialization) do
           %q`{"$date":"2012-01-01T00:00:00.999Z"}`
@@ -209,7 +209,7 @@ describe Time do
         it_behaves_like 'truncates to milliseconds when serializing'
 
         context 'when value has sub-microsecond precision' do
-          let(:obj)  { Time.utc(2012, 1, 1, 0, 0, 0, 999_999_999/1000r) }
+          let(:obj) { Time.utc(2012, 1, 1, 0, 0, 0, 999_999_999/1000r) }
 
           it_behaves_like 'truncates to milliseconds when serializing'
         end
@@ -220,7 +220,7 @@ describe Time do
   describe '#to_json' do
 
     context 'when value has sub-millisecond precision' do
-      let(:obj)  { Time.utc(2012, 1, 1, 0, 0, 0, 999_999) }
+      let(:obj) { Time.utc(2012, 1, 1, 0, 0, 0, 999_999) }
 
       let(:expected_serialization) do
         %q`"2012-01-01 00:00:00 UTC"`
@@ -239,13 +239,13 @@ describe Time do
       it_behaves_like 'truncates to milliseconds when serializing'
 
       context 'when value has sub-microsecond precision' do
-        let(:obj)  { Time.utc(2012, 1, 1, 0, 0, 0, 999_999_999/1000r) }
+        let(:obj) { Time.utc(2012, 1, 1, 0, 0, 0, 999_999_999/1000r) }
 
         it_behaves_like 'truncates to milliseconds when serializing'
       end
 
       context "when the time precedes epoch" do
-        let(:obj)  { Time.utc(1960, 1, 1, 0, 0, 0, 999_999) }
+        let(:obj) { Time.utc(1960, 1, 1, 0, 0, 0, 999_999) }
 
         let(:expected_serialization) do
           %q`"1960-01-01 00:00:00 UTC"`

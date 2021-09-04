@@ -82,7 +82,7 @@ module BSON
     #   extended JSON representation.
     #
     # @return [ Object ] The extended json representation.
-    def as_extended_json(**options)
+    def as_extended_json(**_options)
       self
     end
   end
