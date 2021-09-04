@@ -52,6 +52,14 @@ module BSON
     def to_bson(buffer = ByteBuffer.new, validating_keys = Config.validating_keys?)
       buffer.put_byte(FALSE_BYTE)
     end
+
+    # Converts this object to a representation directly serializable to
+    # Extended JSON (https://github.com/mongodb/specifications/blob/master/source/extended-json.rst).
+    #
+    # @return [ FalseClass ] The extended json representation.
+    def as_extended_json(**_options)
+      self
+    end
   end
 
   # Enrich the core FalseClass class with this module.

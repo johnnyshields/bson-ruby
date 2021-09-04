@@ -33,5 +33,18 @@ module BSON
     def to_json(*args)
       as_json.to_json(*args)
     end
+
+    # Converting an object to JSON simply gets it's hash representation via
+    # as_json, then converts it to a string.
+    #
+    # @example Convert the object to JSON
+    #   object.to_json
+    #
+    # @note All types must implement as_json.
+    #
+    # @return [ String ] The object as JSON.
+    def to_extended_json(*args)
+      as_extended_json.to_json(*args)
+    end
   end
 end

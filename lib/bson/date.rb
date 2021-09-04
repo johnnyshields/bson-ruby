@@ -54,6 +54,14 @@ module BSON
     def bson_type
       ::Time::BSON_TYPE
     end
+
+    # Converts this object to a representation directly serializable to
+    # Extended JSON (https://github.com/mongodb/specifications/blob/master/source/extended-json.rst).
+    #
+    # @return [ String ] The extended json representation.
+    def as_extended_json(**_options)
+      { '$date' => { '$numberLong' => Date.today.strftime('%Q').to_i } }
+    end
   end
 
   # Enrich the core Date class with this module.

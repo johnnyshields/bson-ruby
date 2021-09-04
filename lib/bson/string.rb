@@ -100,6 +100,14 @@ module BSON
       unpack("H*")[0]
     end
 
+    # Converts this object to a representation directly serializable to
+    # Extended JSON (https://github.com/mongodb/specifications/blob/master/source/extended-json.rst).
+    #
+    # @return [ String ] The extended json representation.
+    def as_extended_json(**_options)
+      self
+    end
+
     # Raised when validating keys and a key is illegal in MongoDB
     #
     # @since 4.1.0
