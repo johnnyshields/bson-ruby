@@ -367,13 +367,13 @@ module BSON
     end
 
     def transform_keys
-      return enum_for(:transform_values) unless block_given?
+      return enum_for(:transform_keys) unless block_given?
 
       self.class.new(super)
     end
 
     def transform_keys!
-      return enum_for(:transform_values!) unless block_given?
+      return enum_for(:transform_keys!) unless block_given?
 
       super { |key| convert_key(yield(key)) }
     end

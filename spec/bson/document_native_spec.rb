@@ -16,6 +16,7 @@
 
 require 'spec_helper'
 
+# BSON::Document tests for native Hash method behaviors
 describe BSON::Document do
 
   describe '.try_convert' do
@@ -25,9 +26,9 @@ describe BSON::Document do
       end
 
       it 'converts the object to a document' do
-        doc = BSON::Document.try_convert(hash)
-        expect(doc).to be_a(BSON::Document)
-        expect(doc).to eq(BSON::Document.new('key' => 'value'))
+        doc = described_class.try_convert(hash)
+        expect(doc).to be_a(described_class)
+        expect(doc).to eq(described_class.new('key' => 'value'))
       end
     end
 
@@ -37,19 +38,29 @@ describe BSON::Document do
       end
 
       it 'returns a document' do
-        expect(BSON::Document.try_convert(hash)).to be_a(BSON::Document)
+        expect(described_class.try_convert(hash)).to be_a(described_class)
       end
 
       it 'converts the nested hash to a document' do
-        nested = BSON::Document.try_convert(hash)['nested']
-        expect(nested).to be_a(BSON::Document)
-        expect(nested).to eq(BSON::Document.new('key2' => 'value2'))
+        nested = described_class.try_convert(hash)['nested']
+        expect(nested).to be_a(described_class)
+        expect(nested).to eq(described_class.new('key2' => 'value2'))
+      end
+    end
+
+    context 'when the object is a BSON::Document' do
+      let(:document) do
+        described_class.new('key1' => 'value1')
+      end
+
+      it 'returns the document itself self' do
+        expect(described_class.try_convert(document)).to eq(document)
       end
     end
 
     context 'when the object is not convertible to a hash' do
       it 'returns nil' do
-        expect(BSON::Document.try_convert('not a hash')).to be_nil
+        expect(described_class.try_convert('not a hash')).to be_nil
       end
     end
   end
@@ -57,12 +68,12 @@ describe BSON::Document do
   describe '.[]' do
     context 'with key-value pairs' do
       let(:document) do
-        BSON::Document['key1', 'value1', 'key2', 'value2']
+        described_class['key1', 'value1', 'key2', 'value2']
       end
 
       it 'creates a document with the provided keys and values' do
-        expect(document).to be_a(BSON::Document)
-        expect(document).to eq(BSON::Document.new('key1' => 'value1', 'key2' => 'value2'))
+        expect(document).to be_a(described_class)
+        expect(document).to eq(described_class.new('key1' => 'value1', 'key2' => 'value2'))
       end
     end
 
@@ -72,12 +83,12 @@ describe BSON::Document do
       end
 
       let(:document) do
-        BSON::Document[hash]
+        described_class[hash]
       end
 
       it 'creates a document from the hash-like object' do
-        expect(document).to be_a(BSON::Document)
-        expect(document).to eq(BSON::Document.new('key' => 'value'))
+        expect(document).to be_a(described_class)
+        expect(document).to eq(described_class.new('key' => 'value'))
       end
     end
   end
@@ -85,7 +96,7 @@ describe BSON::Document do
   describe '#to_h' do
     context 'with a single-level document' do
       let(:document) do
-        BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+        described_class.new('key1' => 'value1', 'key2' => 'value2')
       end
 
       let(:hash) do
@@ -94,7 +105,7 @@ describe BSON::Document do
 
       it 'returns a Hash' do
         expect(hash).to be_a(Hash)
-        expect(hash).to_not be_a(BSON::Document)
+        expect(hash).to_not be_a(described_class)
       end
 
       it 'returns a hash with the same keys and values' do
@@ -104,7 +115,7 @@ describe BSON::Document do
 
     context 'with a nested document' do
       let(:document) do
-        BSON::Document.new('key1' => 'value1', 'key2' => BSON::Document.new('key3' => 'value3'))
+        described_class.new('key1' => 'value1', 'key2' => described_class.new('key3' => 'value3'))
       end
 
       let(:hash) do
@@ -114,7 +125,7 @@ describe BSON::Document do
       it 'converts nested documents to hashes' do
         nested = hash['key2']
         expect(nested).to be_a(Hash)
-        expect(nested).to_not be_a(BSON::Document)
+        expect(nested).to_not be_a(described_class)
       end
 
       it 'preserves the nested structure' do
@@ -124,7 +135,7 @@ describe BSON::Document do
 
     context 'when a block is provided' do
       let(:document) do
-        BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+        described_class.new('key1' => 'value1', 'key2' => 'value2')
       end
 
       let(:hash) do
@@ -133,7 +144,7 @@ describe BSON::Document do
 
       it 'returns a Hash' do
         expect(hash).to be_a(Hash)
-        expect(hash).to_not be_a(BSON::Document)
+        expect(hash).to_not be_a(described_class)
       end
 
       it 'applies the block to each key-value pair' do
@@ -144,7 +155,7 @@ describe BSON::Document do
 
   describe '#to_hash' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+      described_class.new('key1' => 'value1', 'key2' => 'value2')
     end
 
     it 'is an alias for #to_h' do
@@ -157,14 +168,14 @@ describe BSON::Document do
 
     it 'returns a hash with the same keys and values' do
       expect(hash).to be_a(Hash)
-      expect(hash).to_not be_a(BSON::Document)
+      expect(hash).to_not be_a(described_class)
       expect(hash).to eq({ 'key1' => 'value1', 'key2' => 'value2' })
     end
   end
 
   describe '#invert' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+      described_class.new('key1' => 'value1', 'key2' => 'value2')
     end
 
     let(:inverted) do
@@ -172,17 +183,17 @@ describe BSON::Document do
     end
 
     it 'returns a new BSON::Document' do
-      expect(inverted).to be_a(BSON::Document)
+      expect(inverted).to be_a(described_class)
       expect(inverted).not_to be(document)
     end
 
     it 'inverts keys and values' do
-      expect(inverted).to eq(BSON::Document.new('value1' => 'key1', 'value2' => 'key2'))
+      expect(inverted).to eq(described_class.new('value1' => 'key1', 'value2' => 'key2'))
     end
 
     context 'with nested documents' do
       let(:document) do
-        BSON::Document.new('key1' => 'value1', 'key2' => BSON::Document.new('nested' => 'value2'))
+        described_class.new('key1' => 'value1', 'key2' => described_class.new('nested' => 'value2'))
       end
 
       let(:inverted) do
@@ -194,7 +205,7 @@ describe BSON::Document do
       end
 
       it 'does convert nested documents' do
-        expect(nested_key).to be_a(BSON::Document)
+        expect(nested_key).to be_a(described_class)
         expect(nested_key).to eq(document['key2'])
       end
 
@@ -206,7 +217,7 @@ describe BSON::Document do
 
   describe '#rehash' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+      described_class.new('key1' => 'value1', 'key2' => 'value2')
     end
 
     it 'returns self' do
@@ -219,7 +230,7 @@ describe BSON::Document do
       end
 
       let(:document) do
-        BSON::Document.new(mutable_key => 'value')
+        described_class.new(mutable_key => 'value')
       end
 
       before do
@@ -235,7 +246,7 @@ describe BSON::Document do
 
   describe '#delete' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+      described_class.new('key1' => 'value1', 'key2' => 'value2')
     end
 
     context 'when the key exists' do
@@ -245,13 +256,13 @@ describe BSON::Document do
 
       it 'removes the key-value pair' do
         document.delete('key1')
-        expect(document).to eq(BSON::Document.new('key2' => 'value2'))
+        expect(document).to eq(described_class.new('key2' => 'value2'))
       end
     end
 
     context 'when the key is a symbol' do
       let(:document) do
-        BSON::Document.new(key1: 'value1', 'key2' => 'value2')
+        described_class.new(key1: 'value1', 'key2' => 'value2')
       end
 
       it 'returns the value' do
@@ -260,7 +271,7 @@ describe BSON::Document do
 
       it 'removes the key-value pair' do
         document.delete(:key1)
-        expect(document).to eq(BSON::Document.new('key2' => 'value2'))
+        expect(document).to eq(described_class.new('key2' => 'value2'))
       end
     end
 
@@ -272,7 +283,7 @@ describe BSON::Document do
 
     context 'when a block is provided' do
       let(:value) do
-        document.delete('key1') { |key| "default for #{key}" }
+        document.delete('key1') { |key| 'default for #{key}' }
       end
 
       it 'returns the result of the block' do
@@ -293,7 +304,7 @@ describe BSON::Document do
 
   describe '#delete_if' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
+      described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
     end
 
     let(:result) do
@@ -306,19 +317,37 @@ describe BSON::Document do
 
     it 'removes keys for which the block returns true' do
       result
-      expect(document).to eq(BSON::Document.new('key2' => 'value2'))
+      expect(document).to eq(described_class.new('key2' => 'value2'))
     end
 
-    context 'when no block is given' do
+    context 'when block not given' do
+      let(:enumerator) do
+        document.dup.delete_if
+      end
+
       it 'returns an enumerator' do
-        expect(document.delete_if).to be_a(Enumerator)
+        expect(enumerator).to be_a(Enumerator)
+      end
+
+      it 'enumerates over all key-value pairs' do
+        pairs = enumerator.to_a
+        expect(pairs.length).to eq(document.length)
+        expect(pairs.map(&:first)).to eq(document.keys)
+        expect(pairs.map(&:last)).to eq(document.values)
+      end
+
+      it 'modifies the original document when used with a block' do
+        doc_copy = document.dup
+        result = doc_copy.delete_if.each { |key, value| key == 'key1' || value == 'value3' }
+        expect(result).to be(doc_copy)
+        expect(doc_copy).to eq(described_class.new('key2' => 'value2'))
       end
     end
   end
 
   describe '#clear' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+      described_class.new('key1' => 'value1', 'key2' => 'value2')
     end
 
     let(:result) do
@@ -337,7 +366,7 @@ describe BSON::Document do
 
   describe '#shift' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+      described_class.new('key1' => 'value1', 'key2' => 'value2')
     end
 
     let(:pair) do
@@ -345,17 +374,17 @@ describe BSON::Document do
     end
 
     it 'returns the first key-value pair as an array' do
-      expect(pair).to eq(['key1', 'value1'])
+      expect(pair).to eq(%w[key1 value1])
     end
 
     it 'removes the first key-value pair from the document' do
       document.shift
-      expect(document).to eq(BSON::Document.new('key2' => 'value2'))
+      expect(document).to eq(described_class.new('key2' => 'value2'))
     end
 
     context 'when the document is empty' do
       let(:empty_document) do
-        BSON::Document.new
+        described_class.new
       end
 
       it 'returns nil' do
@@ -366,12 +395,12 @@ describe BSON::Document do
 
   describe '#merge' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+      described_class.new('key1' => 'value1', 'key2' => 'value2')
     end
 
     context 'when merging with another document' do
       let(:other) do
-        BSON::Document.new('key2' => 'new_value', 'key3' => 'value3')
+        described_class.new('key2' => 'new_value', 'key3' => 'value3')
       end
 
       let(:result) do
@@ -379,7 +408,7 @@ describe BSON::Document do
       end
 
       it 'returns a new BSON::Document' do
-        expect(result).to be_a(BSON::Document)
+        expect(result).to be_a(described_class)
         expect(result).not_to be(document)
       end
 
@@ -402,7 +431,7 @@ describe BSON::Document do
       end
 
       it 'returns a BSON::Document' do
-        expect(result).to be_a(BSON::Document)
+        expect(result).to be_a(described_class)
       end
 
       it 'includes all keys from both documents' do
@@ -432,7 +461,7 @@ describe BSON::Document do
 
     context 'with nested documents' do
       let(:document) do
-        BSON::Document.new('key1' => 'value1', 'nested' => BSON::Document.new('a' => 1, 'b' => 2))
+        described_class.new('key1' => 'value1', 'nested' => described_class.new('a' => 1, 'b' => 2))
       end
 
       let(:other) do
@@ -444,23 +473,23 @@ describe BSON::Document do
       end
 
       it 'replaces the nested document' do
-        expect(result['nested']).to eq(BSON::Document.new('b' => 3, 'c' => 4))
+        expect(result['nested']).to eq(described_class.new('b' => 3, 'c' => 4))
       end
 
-      it 'returns nested BSON::Documents' do
-        expect(result['nested']).to be_a(BSON::Document)
+      it 'returns nested BSON::Document' do
+        expect(result['nested']).to be_a(described_class)
       end
     end
   end
 
   describe '#merge!' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+      described_class.new('key1' => 'value1', 'key2' => 'value2')
     end
 
     context 'when merging with another document' do
       let(:other) do
-        BSON::Document.new('key2' => 'new_value', 'key3' => 'value3')
+        described_class.new('key2' => 'new_value', 'key3' => 'value3')
       end
 
       let(:result) do
@@ -522,7 +551,7 @@ describe BSON::Document do
 
     context 'with nested documents' do
       let(:document) do
-        BSON::Document.new('key1' => 'value1', 'nested' => BSON::Document.new('a' => 1, 'b' => 2))
+        described_class.new('key1' => 'value1', 'nested' => described_class.new('a' => 1, 'b' => 2))
       end
 
       let(:other) do
@@ -535,19 +564,19 @@ describe BSON::Document do
 
       it 'replaces the nested document' do
         result
-        expect(document['nested']).to eq(BSON::Document.new('b' => 3, 'c' => 4))
+        expect(document['nested']).to eq(described_class.new('b' => 3, 'c' => 4))
       end
 
       it 'converts the nested hash to a BSON::Document' do
         result
-        expect(document['nested']).to be_a(BSON::Document)
+        expect(document['nested']).to be_a(described_class)
       end
     end
   end
 
   describe '#update' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1')
+      described_class.new('key1' => 'value1')
     end
 
     let(:other) do
@@ -560,13 +589,13 @@ describe BSON::Document do
 
     it 'updates the document in place' do
       document.update(other)
-      expect(document).to eq(BSON::Document.new('key1' => 'value1', 'key2' => 'value2'))
+      expect(document).to eq(described_class.new('key1' => 'value1', 'key2' => 'value2'))
     end
   end
 
   describe '#reject' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
+      described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
     end
 
     let(:result) do
@@ -574,29 +603,46 @@ describe BSON::Document do
     end
 
     it 'returns a new BSON::Document' do
-      expect(result).to be_a(BSON::Document)
+      expect(result).to be_a(described_class)
       expect(result).not_to be(document)
     end
 
     it 'excludes keys for which the block returns true' do
-      expect(result).to eq(BSON::Document.new('key2' => 'value2'))
+      expect(result).to eq(described_class.new('key2' => 'value2'))
     end
 
     it 'does not modify the original document' do
       result
-      expect(document).to eq(BSON::Document.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3'))
+      expect(document).to eq(described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3'))
     end
 
-    context 'when no block is given' do
+    context 'when block not given' do
+      let(:enumerator) do
+        document.reject
+      end
+
       it 'returns an enumerator' do
-        expect(document.reject).to be_a(Enumerator)
+        expect(enumerator).to be_a(Enumerator)
+      end
+
+      it 'enumerates over all key-value pairs' do
+        pairs = enumerator.to_a
+        expect(pairs.length).to eq(document.length)
+        expect(pairs.map(&:first)).to eq(document.keys)
+        expect(pairs.map(&:last)).to eq(document.values)
+      end
+
+      it 'produces a BSON::Document when used with a block' do
+        result = enumerator.each { |key, value| key == 'key1' || value == 'value3' }
+        expect(result).to be_a(described_class)
+        expect(result).to eq(described_class.new('key2' => 'value2'))
       end
     end
   end
 
   describe '#reject!' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
+      described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
     end
 
     context 'when changes are made' do
@@ -610,7 +656,7 @@ describe BSON::Document do
 
       it 'modifies the original document' do
         result
-        expect(document).to eq(BSON::Document.new('key2' => 'value2'))
+        expect(document).to eq(described_class.new('key2' => 'value2'))
       end
     end
 
@@ -625,20 +671,45 @@ describe BSON::Document do
 
       it 'does not modify the original document' do
         result
-        expect(document).to eq(BSON::Document.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3'))
+        expect(document).to eq(described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3'))
       end
     end
 
-    context 'when no block is given' do
+    context 'when block not given' do
+      let(:enumerator) do
+        document.dup.reject!
+      end
+
       it 'returns an enumerator' do
-        expect(document.reject!).to be_a(Enumerator)
+        expect(enumerator).to be_a(Enumerator)
+      end
+
+      it 'enumerates over all key-value pairs' do
+        pairs = enumerator.to_a
+        expect(pairs.length).to eq(document.length)
+        expect(pairs.map(&:first)).to eq(document.keys)
+        expect(pairs.map(&:last)).to eq(document.values)
+      end
+
+      it 'modifies the original document when used with a block' do
+        doc_copy = document.dup
+        result = doc_copy.reject!.each { |key, value| key == 'key1' || value == 'value3' }
+        expect(result).to be(doc_copy)
+        expect(doc_copy).to eq(described_class.new('key2' => 'value2'))
+      end
+
+      it 'returns nil if no changes are made' do
+        doc_copy = document.dup
+        result = doc_copy.reject!.each { |key, value| false }
+        expect(result).to be_nil
+        expect(doc_copy).to eq(document)
       end
     end
   end
 
   describe '#select' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
+      described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
     end
 
     let(:result) do
@@ -646,29 +717,46 @@ describe BSON::Document do
     end
 
     it 'returns a new BSON::Document' do
-      expect(result).to be_a(BSON::Document)
+      expect(result).to be_a(described_class)
       expect(result).not_to be(document)
     end
 
     it 'includes keys for which the block returns true' do
-      expect(result).to eq(BSON::Document.new('key1' => 'value1', 'key3' => 'value3'))
+      expect(result).to eq(described_class.new('key1' => 'value1', 'key3' => 'value3'))
     end
 
     it 'does not modify the original document' do
       result
-      expect(document).to eq(BSON::Document.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3'))
+      expect(document).to eq(described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3'))
     end
 
-    context 'when no block is given' do
+    context 'when block not given' do
+      let(:enumerator) do
+        document.select
+      end
+
       it 'returns an enumerator' do
-        expect(document.select).to be_a(Enumerator)
+        expect(enumerator).to be_a(Enumerator)
+      end
+
+      it 'enumerates over all key-value pairs' do
+        pairs = enumerator.to_a
+        expect(pairs.length).to eq(document.length)
+        expect(pairs.map(&:first)).to eq(document.keys)
+        expect(pairs.map(&:last)).to eq(document.values)
+      end
+
+      it 'produces a BSON::Document when used with a block' do
+        result = enumerator.each { |key, value| key == 'key1' || value == 'value3' }
+        expect(result).to be_a(described_class)
+        expect(result).to eq(described_class.new('key1' => 'value1', 'key3' => 'value3'))
       end
     end
   end
 
   describe '#select!' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
+      described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
     end
 
     context 'when changes are made' do
@@ -682,7 +770,7 @@ describe BSON::Document do
 
       it 'modifies the original document' do
         result
-        expect(document).to eq(BSON::Document.new('key1' => 'value1', 'key3' => 'value3'))
+        expect(document).to eq(described_class.new('key1' => 'value1', 'key3' => 'value3'))
       end
     end
 
@@ -697,40 +785,106 @@ describe BSON::Document do
 
       it 'does not modify the original document' do
         result
-        expect(document).to eq(BSON::Document.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3'))
+        expect(document).to eq(described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3'))
       end
     end
 
-    context 'when no block is given' do
+    context 'when block not given' do
+      let(:enumerator) do
+        document.dup.select!
+      end
+
       it 'returns an enumerator' do
-        expect(document.select!).to be_a(Enumerator)
+        expect(enumerator).to be_a(Enumerator)
+      end
+
+      it 'enumerates over all key-value pairs' do
+        pairs = enumerator.to_a
+        expect(pairs.length).to eq(document.length)
+        expect(pairs.map(&:first)).to eq(document.keys)
+        expect(pairs.map(&:last)).to eq(document.values)
+      end
+
+      it 'modifies the original document when used with a block' do
+        doc_copy = document.dup
+        result = doc_copy.select!.each { |key, value| key == 'key1' || value == 'value3' }
+        expect(result).to be(doc_copy)
+        expect(doc_copy).to eq(described_class.new('key1' => 'value1', 'key3' => 'value3'))
+      end
+
+      it 'returns nil if no changes are made' do
+        doc_copy = document.dup
+        result = doc_copy.select!.each { |key, value| true }
+        expect(result).to be_nil
+        expect(doc_copy).to eq(document)
       end
     end
   end
 
   describe '#filter' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+      described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
     end
 
     it 'is an alias for select' do
       expect(document.method(:filter)).to eq(document.method(:select))
     end
+
+    context 'when block not given' do
+      let(:enumerator) do
+        document.filter
+      end
+
+      it 'is an alias for select' do
+        expect(document.method(:filter)).to eq(document.method(:select))
+      end
+
+      it 'returns an enumerator' do
+        expect(enumerator).to be_a(Enumerator)
+      end
+
+      it 'produces a BSON::Document when used with a block' do
+        result = enumerator.each { |key, value| key == 'key1' || value == 'value3' }
+        expect(result).to be_a(described_class)
+        expect(result).to eq(described_class.new('key1' => 'value1', 'key3' => 'value3'))
+      end
+    end
   end
 
   describe '#filter!' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+      described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
     end
 
     it 'is an alias for select!' do
       expect(document.method(:filter!)).to eq(document.method(:select!))
     end
+
+    context 'when block not given' do
+      let(:enumerator) do
+        document.dup.filter!
+      end
+
+      it 'is an alias for select!' do
+        expect(document.method(:filter!)).to eq(document.method(:select!))
+      end
+
+      it 'returns an enumerator' do
+        expect(enumerator).to be_a(Enumerator)
+      end
+
+      it 'modifies the original document when used with a block' do
+        doc_copy = document.dup
+        result = doc_copy.filter!.each { |key, value| key == 'key1' || value == 'value3' }
+        expect(result).to be(doc_copy)
+        expect(doc_copy).to eq(described_class.new('key1' => 'value1', 'key3' => 'value3'))
+      end
+    end
   end
 
   describe '#keep_if' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
+      described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
     end
 
     let(:result) do
@@ -743,19 +897,37 @@ describe BSON::Document do
 
     it 'modifies the original document' do
       result
-      expect(document).to eq(BSON::Document.new('key1' => 'value1', 'key3' => 'value3'))
+      expect(document).to eq(described_class.new('key1' => 'value1', 'key3' => 'value3'))
     end
 
-    context 'when no block is given' do
+    context 'when block not given' do
+      let(:enumerator) do
+        document.dup.keep_if
+      end
+
       it 'returns an enumerator' do
-        expect(document.keep_if).to be_a(Enumerator)
+        expect(enumerator).to be_a(Enumerator)
+      end
+
+      it 'enumerates over all key-value pairs' do
+        pairs = enumerator.to_a
+        expect(pairs.length).to eq(document.length)
+        expect(pairs.map(&:first)).to eq(document.keys)
+        expect(pairs.map(&:last)).to eq(document.values)
+      end
+
+      it 'modifies the original document when used with a block' do
+        doc_copy = document.dup
+        result = doc_copy.keep_if.each { |key, value| key == 'key1' || value == 'value3' }
+        expect(result).to be(doc_copy)
+        expect(doc_copy).to eq(described_class.new('key1' => 'value1', 'key3' => 'value3'))
       end
     end
   end
 
   describe '#compact' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => nil, 'key3' => 'value3')
+      described_class.new('key1' => 'value1', 'key2' => nil, 'key3' => 'value3')
     end
 
     let(:result) do
@@ -763,23 +935,23 @@ describe BSON::Document do
     end
 
     it 'returns a new BSON::Document' do
-      expect(result).to be_a(BSON::Document)
+      expect(result).to be_a(described_class)
       expect(result).not_to be(document)
     end
 
     it 'excludes pairs with nil values' do
-      expect(result).to eq(BSON::Document.new('key1' => 'value1', 'key3' => 'value3'))
+      expect(result).to eq(described_class.new('key1' => 'value1', 'key3' => 'value3'))
     end
 
     it 'does not modify the original document' do
       result
-      expect(document).to eq(BSON::Document.new('key1' => 'value1', 'key2' => nil, 'key3' => 'value3'))
+      expect(document).to eq(described_class.new('key1' => 'value1', 'key2' => nil, 'key3' => 'value3'))
     end
   end
 
   describe '#compact!' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => nil, 'key3' => 'value3')
+      described_class.new('key1' => 'value1', 'key2' => nil, 'key3' => 'value3')
     end
 
     context 'when there are nil values' do
@@ -793,13 +965,13 @@ describe BSON::Document do
 
       it 'modifies the original document' do
         result
-        expect(document).to eq(BSON::Document.new('key1' => 'value1', 'key3' => 'value3'))
+        expect(document).to eq(described_class.new('key1' => 'value1', 'key3' => 'value3'))
       end
     end
 
     context 'when there are no nil values' do
       let(:document) do
-        BSON::Document.new('key1' => 'value1', 'key3' => 'value3')
+        described_class.new('key1' => 'value1', 'key3' => 'value3')
       end
 
       let(:result) do
@@ -812,7 +984,7 @@ describe BSON::Document do
 
       it 'does not modify the original document' do
         result
-        expect(document).to eq(BSON::Document.new('key1' => 'value1', 'key3' => 'value3'))
+        expect(document).to eq(described_class.new('key1' => 'value1', 'key3' => 'value3'))
       end
     end
   end
@@ -820,7 +992,7 @@ describe BSON::Document do
   describe '#slice' do
     context 'with a single-level document' do
       let(:document) do
-        BSON::Document.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
+        described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
       end
 
       let(:result) do
@@ -828,23 +1000,23 @@ describe BSON::Document do
       end
 
       it 'returns a new BSON::Document' do
-        expect(result).to be_a(BSON::Document)
+        expect(result).to be_a(described_class)
         expect(result).not_to be(document)
       end
 
       it 'includes only the specified keys' do
-        expect(result).to eq(BSON::Document.new('key1' => 'value1', 'key3' => 'value3'))
+        expect(result).to eq(described_class.new('key1' => 'value1', 'key3' => 'value3'))
       end
 
       it 'does not modify the original document' do
         result
-        expect(document).to eq(BSON::Document.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3'))
+        expect(document).to eq(described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3'))
       end
     end
 
     context 'when some keys do not exist' do
       let(:document) do
-        BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+        described_class.new('key1' => 'value1', 'key2' => 'value2')
       end
 
       let(:result) do
@@ -852,13 +1024,13 @@ describe BSON::Document do
       end
 
       it 'includes only the existing keys' do
-        expect(result).to eq(BSON::Document.new('key1' => 'value1'))
+        expect(result).to eq(described_class.new('key1' => 'value1'))
       end
     end
 
     context 'with symbol keys' do
       let(:document) do
-        BSON::Document.new(key1: 'value1', key2: 'value2')
+        described_class.new(key1: 'value1', key2: 'value2')
       end
 
       let(:result) do
@@ -866,14 +1038,14 @@ describe BSON::Document do
       end
 
       it 'handles symbol keys correctly' do
-        expect(result).to eq(BSON::Document.new('key1' => 'value1'))
+        expect(result).to eq(described_class.new('key1' => 'value1'))
       end
     end
   end
 
   describe '#transform_keys' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+      described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
     end
 
     let(:result) do
@@ -881,22 +1053,22 @@ describe BSON::Document do
     end
 
     it 'returns a new BSON::Document' do
-      expect(result).to be_a(BSON::Document)
+      expect(result).to be_a(described_class)
       expect(result).not_to be(document)
     end
 
     it 'transforms all keys according to the block' do
-      expect(result).to eq({ 'KEY1' => 'value1', 'KEY2' => 'value2' })
+      expect(result).to eq({ 'KEY1' => 'value1', 'KEY2' => 'value2', 'KEY3' => 'value3' })
     end
 
     it 'does not modify the original document' do
       result
-      expect(document).to eq(BSON::Document.new('key1' => 'value1', 'key2' => 'value2'))
+      expect(document).to eq(described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3'))
     end
 
     context 'with nested documents' do
       let(:document) do
-        BSON::Document.new('outer' => BSON::Document.new('inner' => 'value'))
+        described_class.new('outer' => described_class.new('inner' => 'value'))
       end
 
       let(:result) do
@@ -907,35 +1079,53 @@ describe BSON::Document do
         expect(result).to eq({ 'OUTER' => { 'inner' => 'value' } })
       end
 
-      it 'keeps nested elements as BSON::Documents' do
-        expect(result['OUTER']).to be_a(BSON::Document)
+      it 'keeps nested elements as BSON::Document' do
+        expect(result['OUTER']).to be_a(described_class)
+      end
+    end
+
+    context 'when block not given' do
+      let(:enumerator) do
+        document.transform_keys
+      end
+
+      it 'returns an enumerator' do
+        expect(enumerator).to be_a(Enumerator)
+      end
+
+      it 'enumerates over all keys' do
+        expect(enumerator.to_a).to eq(document.keys)
+      end
+
+      it 'produces a BSON::Document when used with a block' do
+        result = enumerator.each { |key| key.upcase }
+        expect(result).to be_a(described_class)
+        expect(result).to eq(described_class.new('KEY1' => 'value1', 'KEY2' => 'value2', 'KEY3' => 'value3'))
       end
     end
   end
 
   describe '#transform_keys!' do
-    context 'with a simple document' do
-      let(:document) do
-        BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
-      end
+    let(:document) do
+      described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
+    end
 
-      let(:result) do
-        document.transform_keys! { |key| key.upcase }
-      end
+    let(:result) do
+      document.transform_keys! { |key| key.upcase }
+    end
 
-      it 'returns self' do
-        expect(result).to be(document)
-      end
+    it 'returns self' do
+      expect(result).to be(document)
+    end
 
-      it 'transforms all keys according to the block' do
-        result
-        expect(document.keys).to eq(%w[KEY1 KEY2])
-      end
+    it 'transforms all keys according to the block' do
+      result
+      expect(document.keys).to eq(%w[KEY1 KEY2 KEY3])
     end
 
     context 'with nested documents' do
       let(:document) do
-        BSON::Document.new('outer' => BSON::Document.new('inner' => 'value'))
+        described_class.new('outer' => described_class.new('inner' => 'value'))
       end
 
       let(:result) do
@@ -947,15 +1137,15 @@ describe BSON::Document do
         expect(document['OUTER'].keys).to eq(['inner'])
       end
 
-      it 'preserves nested BSON::Documents' do
+      it 'preserves nested BSON::Document' do
         result
-        expect(document['OUTER']).to be_a(BSON::Document)
+        expect(document['OUTER']).to be_a(described_class)
       end
     end
 
     context 'transforming to keys to String' do
       let(:document) do
-        BSON::Document.new('key' => :a, 1 => :b)
+        described_class.new('key' => :a, 1 => :b)
       end
 
       let(:action) do
@@ -970,7 +1160,7 @@ describe BSON::Document do
 
     context 'transforming to keys to Symbol' do
       let(:document) do
-        BSON::Document.new('key' => :a, 1 => :b)
+        described_class.new('key' => :a, 1 => :b)
       end
 
       let(:action) do
@@ -982,11 +1172,34 @@ describe BSON::Document do
         expect(document).to eq('key' => :a, 1 => :b)
       end
     end
+
+    context 'when block not given' do
+      let(:enumerator) do
+        document.transform_keys!
+      end
+
+      it 'returns an enumerator' do
+        expect(enumerator).to be_a(Enumerator)
+      end
+
+      it 'enumerates over all keys' do
+        expect(enumerator.to_a).to eq(%w[key1 key2 key3])
+
+        # Side effect of calling #to_a, same as behavior on Hash.
+        expect(document).to eq(nil => 'value3')
+      end
+
+      it 'modifies the original document when used with a block' do
+        result = document.transform_keys!.each { |key| key.upcase }
+        expect(result).to be(document)
+        expect(document).to eq(described_class.new('KEY1' => 'value1', 'KEY2' => 'value2', 'KEY3' => 'value3'))
+      end
+    end
   end
 
   describe '#transform_values' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+      described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
     end
 
     let(:result) do
@@ -994,22 +1207,22 @@ describe BSON::Document do
     end
 
     it 'returns a new BSON::Document' do
-      expect(result).to be_a(BSON::Document)
+      expect(result).to be_a(described_class)
       expect(result).not_to be(document)
     end
 
     it 'transforms all values according to the block' do
-      expect(result).to eq({ 'key1' => 'VALUE1', 'key2' => 'VALUE2' })
+      expect(result).to eq({ 'key1' => 'VALUE1', 'key2' => 'VALUE2', 'key3' => 'VALUE3' })
     end
 
     it 'does not modify the original document' do
       result
-      expect(document).to eq(BSON::Document.new('key1' => 'value1', 'key2' => 'value2'))
+      expect(document).to eq(described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3'))
     end
 
     context 'with nested documents' do
       let(:document) do
-        BSON::Document.new('key1' => BSON::Document.new('inner' => 'value'))
+        described_class.new('key1' => described_class.new('inner' => 'value'))
       end
 
       let(:result) do
@@ -1019,35 +1232,114 @@ describe BSON::Document do
       it 'preserves nested documents' do
         original_nested = document['key1']
         nested = result['key1']
-        expect(nested).to be_a(BSON::Document)
+        expect(nested).to be_a(described_class)
         expect(nested).to eq(original_nested)
       end
     end
 
     context 'transforming nested documents' do
       let(:document) do
-        BSON::Document.new('key1' => BSON::Document.new('inner' => 'value'))
+        described_class.new('key1' => described_class.new('inner' => 'value'))
       end
 
       let(:result) do
-        document.transform_values! { |value| value.is_a?(BSON::Document) ? { foo: :bar, 1 => :a } : value }
+        document.transform_values! { |value| value.is_a?(described_class) ? { foo: :bar, 1 => :a } : value }
       end
 
       it 'allows transforming nested documents' do
-        expect(result).to eq(BSON::Document.new('key1' => { 'foo' => :bar, 1 => :a }))
+        expect(result).to eq(described_class.new('key1' => { 'foo' => :bar, 1 => :a }))
       end
 
       it 'converts nested values to BSON::Document' do
         nested = result['key1']
-        expect(nested).to be_a(BSON::Document)
+        expect(nested).to be_a(described_class)
         expect(nested.keys).to eq(['foo', 1])
+      end
+    end
+
+    context 'when block not given' do
+      let(:enumerator) do
+        document.transform_values
+      end
+
+      it 'returns an enumerator' do
+        expect(enumerator).to be_a(Enumerator)
+      end
+
+      it 'enumerates over all values' do
+        expect(enumerator.to_a).to eq(document.values)
+      end
+
+      it 'produces a BSON::Document when used with a block' do
+        result = enumerator.each { |value| value.upcase }
+        expect(result).to be_a(described_class)
+        expect(result).to eq(described_class.new('key1' => 'VALUE1', 'key2' => 'VALUE2', 'key3' => 'VALUE3'))
+      end
+
+      context 'with nested documents' do
+        let(:nested_document) do
+          described_class.new('key1' => 'value1', 'nested' => described_class.new('inner' => 'value'))
+        end
+
+        let(:nested_enumerator) do
+          nested_document.transform_values
+        end
+
+        it 'properly handles nested documents when used with a block' do
+          result = nested_enumerator.each { |value| value.is_a?(described_class) ? value.dup : value }
+          expect(result).to be_a(described_class)
+          expect(result['nested']).to be_a(described_class)
+          expect(result['nested']).to eq(described_class.new('inner' => 'value'))
+        end
+      end
+
+      context "enumerator for nested documents" do
+        let(:nested_document) do
+          described_class.new(
+            "key1" => "value1",
+            "nested" => described_class.new(
+              "inner1" => "value2",
+              "inner2" => described_class.new("deep" => "value3")
+            )
+          )
+        end
+
+        it "preserves class of nested documents in transformations" do
+          # Using transform_values with an identity block should preserve all types
+          result = nested_document.transform_values { |v| v }
+          expect(result["nested"]).to be_a(described_class)
+          expect(result["nested"]["inner2"]).to be_a(described_class)
+        end
+
+        it "allows transforming nested documents with enumerator" do
+          doc_copy = nested_document.dup
+          # Using transform_values! with an identity block should preserve all types
+          doc_copy.transform_values!.each { |v| v }
+          expect(doc_copy["nested"]).to be_a(described_class)
+          expect(doc_copy["nested"]["inner2"]).to be_a(described_class)
+        end
+      end
+
+      context "chaining enumerators" do
+        it "allows chaining operations on the returned enumerator" do
+          result = document.transform_values.with_index do |value, i|
+            "#{value}-#{i}"
+          end
+
+          expect(result).to be_a(described_class)
+          expect(result).to eq(described_class.new(
+            "key1" => "value1-0",
+            "key2" => "value2-1",
+            "key3" => "value3-2"
+          ))
+        end
       end
     end
   end
 
   describe '#transform_values!' do
     let(:document) do
-      BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+      described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
     end
 
     let(:result) do
@@ -1060,12 +1352,12 @@ describe BSON::Document do
 
     it 'transforms all values according to the block' do
       result
-      expect(document).to eq(BSON::Document.new('key1' => 'VALUE1', 'key2' => 'VALUE2'))
+      expect(document).to eq(described_class.new('key1' => 'VALUE1', 'key2' => 'VALUE2', 'key3' => 'VALUE3'))
     end
 
     context 'with nested documents' do
       let(:document) do
-        BSON::Document.new('key1' => BSON::Document.new('inner' => 'value'))
+        described_class.new('key1' => described_class.new('inner' => 'value'))
       end
 
       let(:action) do
@@ -1076,30 +1368,51 @@ describe BSON::Document do
         original_nested = document['key1']
         action
         nested = document['key1']
-        expect(nested).to be_a(BSON::Document)
+        expect(nested).to be_a(described_class)
         expect(nested).to eq(original_nested)
       end
     end
 
     context 'transforming nested documents' do
       let(:document) do
-        BSON::Document.new('key1' => BSON::Document.new('inner' => 'value'))
+        described_class.new('key1' => described_class.new('inner' => 'value'))
       end
 
       let(:action) do
-        document.transform_values! { |value| value.is_a?(BSON::Document) ? { foo: :bar, 1 => :a } : value }
+        document.transform_values! { |value| value.is_a?(described_class) ? { foo: :bar, 1 => :a } : value }
       end
 
       it 'allows transforming nested documents' do
         action
-        expect(document).to eq(BSON::Document.new('key1' => { 'foo' => :bar, 1 => :a }))
+        expect(document).to eq(described_class.new('key1' => { 'foo' => :bar, 1 => :a }))
       end
 
       it 'converts nested values to BSON::Document' do
         action
         nested = document['key1']
-        expect(nested).to be_a(BSON::Document)
+        expect(nested).to be_a(described_class)
         expect(nested.keys).to eq(['foo', 1])
+      end
+    end
+
+    context 'when block not given' do
+      let(:enumerator) do
+        document.dup.transform_values!
+      end
+
+      it 'returns an enumerator' do
+        expect(enumerator).to be_a(Enumerator)
+      end
+
+      it 'enumerates over all values' do
+        expect(enumerator.to_a).to eq(document.values)
+      end
+
+      it 'modifies the original document when used with a block' do
+        doc_copy = document.dup
+        result = doc_copy.transform_values!.each { |value| value.upcase }
+        expect(result).to be(doc_copy)
+        expect(doc_copy).to eq(described_class.new('key1' => 'VALUE1', 'key2' => 'VALUE2', 'key3' => 'VALUE3'))
       end
     end
   end
