@@ -253,6 +253,29 @@ module BSON
     end
 
     class << self
+
+      # Deserialize the object id from raw BSON bytes.
+      #
+      # @example Get the object id from BSON.
+      #   ObjectId.from_bson(bson)
+      #
+      # @param [ ByteBuffer ] buffer The byte buffer.
+      # @param [ Hash ] _ An optional hash of keyword arguments (unused).
+      #
+      # @return [ BSON::ObjectId ] The object id.
+      #
+      # @since 2.0.0
+      def try_convert(object)
+        case object
+        when self
+          object
+        when BSON::ByteBuffer
+          from_bson(object)
+        else
+          from_string(object)
+        end
+      end
+
       # Deserialize the object id from raw BSON bytes.
       #
       # @example Get the object id from BSON.
@@ -285,11 +308,12 @@ module BSON
       end
 
       # Create a new object id from a string.
+      # If the object is already
       #
       # @example Create an object id from the string.
       #   BSON::ObjectId.from_string(id)
       #
-      # @param [ String ] string The string to create the id from.
+      # @param [ String | BSON::ObjectId ] string The string to create the id from.
       #
       # @raise [ BSON::Error::InvalidObjectId ] If the provided string is invalid.
       #
@@ -297,10 +321,14 @@ module BSON
       #
       # @since 2.0.0
       def from_string(string)
+        return string if string.is_a?(self)
+
         raise Error::InvalidObjectId, "'#{string}' is an invalid ObjectId." unless legal?(string)
 
         from_data([ string ].pack('H*'))
       end
+
+      alias :try_convert :from_string
 
       # Create a new object id from a time.
       #

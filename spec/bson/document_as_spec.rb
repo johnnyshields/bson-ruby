@@ -44,4 +44,229 @@ describe BSON::Document do
       end
     end
   end
+
+  describe '#slice!' do
+    context 'with a single-level document' do
+      let(:document) do
+        BSON::Document.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
+      end
+
+      let(:result) do
+        document.slice!('key1', 'key3')
+      end
+
+      it 'returns a new BSON::Document with removed keys' do
+        expect(result).to be_a(BSON::Document)
+        expect(result).to eq(BSON::Document.new('key2' => 'value2'))
+      end
+
+      it 'modifies the original document' do
+        result
+        expect(document).to eq(BSON::Document.new('key1' => 'value1', 'key3' => 'value3'))
+      end
+    end
+
+    context 'when some keys do not exist' do
+      let(:document) do
+        BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+      end
+
+      let(:result) do
+        document.slice!('key1', 'nonexistent')
+      end
+
+      it 'returns a document with the keys that were removed' do
+        expect(result).to eq(BSON::Document.new('key2' => 'value2'))
+      end
+
+      it 'modifies the original document' do
+        result
+        expect(document).to eq(BSON::Document.new('key1' => 'value1'))
+      end
+    end
+
+    context 'with symbol keys' do
+      let(:document) do
+        BSON::Document.new(key1: 'value1', key2: 'value2')
+      end
+
+      let(:result) do
+        document.slice!(:key1)
+      end
+
+      it 'returns a document with the keys that were removed' do
+        expect(result).to eq(BSON::Document.new('key2' => 'value2'))
+      end
+
+      it 'modifies the original document' do
+        result
+        expect(document).to eq(BSON::Document.new('key1' => 'value1'))
+      end
+    end
+  end
+
+
+
+  describe '#symbolize_keys' do
+    let(:document) do
+      BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+    end
+
+    let(:result) do
+      document.symbolize_keys
+    end
+
+    it 'returns a Hash, not a BSON::Document' do
+      expect(result).to be_a(Hash)
+      expect(result).not_to be_a(BSON::Document)
+    end
+
+    it 'converts string keys to symbols' do
+      expect(result).to eq({ key1: 'value1', key2: 'value2' })
+    end
+
+    it 'does not modify the original document' do
+      result
+      expect(document).to eq(BSON::Document.new('key1' => 'value1', 'key2' => 'value2'))
+    end
+
+    context 'with nested documents' do
+      let(:document) do
+        BSON::Document.new('key1' => BSON::Document.new('inner' => 'value'))
+      end
+
+      let(:result) do
+        document.symbolize_keys
+      end
+
+      it 'does not convert keys in nested documents' do
+        expect(result[:key1]).to eq({ 'inner' => 'value' })
+      end
+
+      it 'converts nested BSON::Documents to plain Hashes' do
+        expect(result[:key1]).to be_a(Hash)
+        expect(result[:key1]).not_to be_a(BSON::Document)
+      end
+    end
+  end
+
+  describe '#symbolize_keys!' do
+    let(:document) do
+      BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+    end
+
+    it 'raises ArgumentError' do
+      expect { document.symbolize_keys! }.to raise_error(ArgumentError, /symbolize_keys! is not supported/)
+    end
+  end
+
+  describe '#deep_symbolize_keys' do
+    let(:document) do
+      BSON::Document.new('key1' => 'value1', 'key2' => BSON::Document.new('inner' => 'value'))
+    end
+
+    let(:result) do
+      document.deep_symbolize_keys
+    end
+
+    it 'returns a Hash, not a BSON::Document' do
+      expect(result).to be_a(Hash)
+      expect(result).not_to be_a(BSON::Document)
+    end
+
+    it 'converts string keys to symbols at all levels' do
+      expect(result).to eq({ key1: 'value1', key2: { inner: 'value' } })
+    end
+
+    it 'does not modify the original document' do
+      result
+      expect(document).to eq(BSON::Document.new('key1' => 'value1', 'key2' => BSON::Document.new('inner' => 'value')))
+    end
+  end
+
+  describe '#deep_symbolize_keys!' do
+    let(:document) do
+      BSON::Document.new('key1' => 'value1', 'key2' => BSON::Document.new('inner' => 'value'))
+    end
+
+    it 'raises ArgumentError' do
+      expect { document.deep_symbolize_keys! }.to raise_error(ArgumentError, /deep_symbolize_keys! is not supported/)
+    end
+  end
+
+  describe '#stringify_keys' do
+    let(:document) do
+      BSON::Document.new(:key1 => 'value1', 'key2' => 'value2')
+    end
+
+    it 'is an alias for #to_h' do
+      expect(document.method(:stringify_keys)).to eq(document.method(:to_h))
+    end
+
+    let(:result) do
+      document.stringify_keys
+    end
+
+    it 'returns a Hash' do
+      expect(result).to be_a(Hash)
+    end
+
+    it 'converts all keys to strings' do
+      expect(result).to eq({ 'key1' => 'value1', 'key2' => 'value2' })
+    end
+  end
+
+  describe '#stringify_keys!' do
+    let(:document) do
+      BSON::Document.new(:key1 => 'value1', 'key2' => 'value2')
+    end
+
+    context 'when the document contains only string keys' do
+      let(:string_doc) do
+        BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+      end
+
+      it 'returns self' do
+        expect(string_doc.stringify_keys!).to be(string_doc)
+      end
+    end
+
+    context 'when the document contains symbol keys' do
+      it 'raises ArgumentError' do
+        expect { document.stringify_keys! }.to raise_error(ArgumentError, /stringify_keys! is not supported/)
+      end
+    end
+  end
+
+  describe '#deep_stringify_keys' do
+    let(:document) do
+      BSON::Document.new(:key1 => 'value1', :key2 => BSON::Document.new(:inner => 'value'))
+    end
+
+    it 'is an alias for #to_h' do
+      expect(document.method(:deep_stringify_keys)).to eq(document.method(:to_h))
+    end
+
+    let(:result) do
+      document.deep_stringify_keys
+    end
+
+    it 'returns a Hash' do
+      expect(result).to be_a(Hash)
+    end
+
+    it 'converts all keys to strings at all levels' do
+      expect(result).to eq({ 'key1' => 'value1', 'key2' => { 'inner' => 'value' } })
+    end
+  end
+
+  describe '#deep_stringify_keys!' do
+    let(:document) do
+      BSON::Document.new(:key1 => 'value1', 'key2' => 'value2')
+    end
+
+    it 'raises ArgumentError' do
+      expect { document.deep_stringify_keys! }.to raise_error(ArgumentError, /deep_stringify_keys! is not supported/)
+    end
+  end
 end

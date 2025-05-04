@@ -26,6 +26,10 @@ end
 
 module BSON
 
+  def Document()
+
+  end
+
   # This module provides behaviour for serializing and deserializing entire
   # BSON documents, according to the BSON specification.
   #
@@ -35,6 +39,16 @@ module BSON
   #
   # @since 2.0.0
   class Document < ::Hash
+
+    class << self
+
+      def try_convert(hash)
+        return hash if hash.is_a?(BSON::Document)
+
+        hash = super
+        BSON::Document.new(hash) if hash
+      end
+    end
 
     # Get a value from the document for the provided key. Can use string or
     # symbol access, with string access being the faster of the two.
@@ -317,9 +331,149 @@ module BSON
       copy
     end
 
-    def symbolize_keys!
-      raise ArgumentError, 'symbolize_keys! is not supported on BSON::Document instances. Please convert the document to hash first (using #to_h), then call #symbolize_keys! on the Hash instance'
+    # Recursively converts the document and all nested documents to a hash.
+    #
+    # Accepts an optional block, which is applied to the newly converted hash.
+    # This is done to mimic the Ruby kernel object behavior of #to_h.
+    #
+    # @yield [ key, value ] Optional block for transforming the hash.
+    #
+    # @return [ Hash ] A new hash object, containing nested hashes if applicable.
+    def to_h(&block)
+      hash = super do |key, value|
+        [key, value.is_a?(self.class) ? value.to_h : value]
+      end
+      block_given? ? hash.send(:to_h, &block) : hash
     end
+
+    alias :to_hash :to_h
+
+    def stringify_keys
+      to_h.stringify_keys!
+    end
+
+    def stringify_keys!
+      self
+    end
+
+    alias :deep_stringify_keys! :stringify_keys!
+
+    def deep_stringify_keys
+      to_h.deep_stringify_keys!
+    end
+
+    # @raise [ ArgumentError ] Indicates the method is not supported.
+    def symbolize_keys
+      to_h.symbolize_keys!
+    end
+
+    # @raise [ ArgumentError ] Indicates the method is not supported.
+    def symbolize_keys!
+      raise ArgumentError, 'symbolize_keys! is not supported on BSON::Document instances. Instead call #symbolize_keys which returns a new Hash object.'
+    end
+
+    # Returns a new hash with all keys (top-level and nested) as symbols.
+    #
+    # @return [ Hash ] A new hash with all keys as symbols.
+    def deep_symbolize_keys
+      to_h.deep_symbolize_keys!
+    end
+
+    # @raise [ ArgumentError ] Indicates the method is not supported.
+    def deep_symbolize_keys!
+      raise ArgumentError, 'deep_symbolize_keys! is not supported on BSON::Document instances. Instead call #deep_symbolize_keys which returns a new Hash object.'
+    end
+
+
+    def invert
+      self.class.new(super)
+    end
+
+    def select
+      return super unless block_given?
+
+      self.class.new(super)
+    end
+
+    alias :filter :select
+
+    def reject
+      return super unless block_given?
+
+      self.class.new(super)
+    end
+
+    # invert
+    # rehash
+    # delete
+    # delete_if
+    # clear
+    # shift
+    # merge
+    # merge!
+    # (merge, as arg)
+    # (merge!, as arg)
+    # update (alias)
+    # reverse_merge
+    # reverse_merge!
+    # reject
+    # reject!
+    # select
+    # select!
+    # filter (alias)
+    # filter! (alias)
+    # keep_if
+    # compact
+    # compact!
+    # compact_blank
+    # compact_blank!
+    # transform_keys!
+    # transform_values!
+    # .try_convert(obj)
+    # .[]
+    # .()
+    # deep_merge
+    # deep_merge!
+    # slice
+    # slice!
+
+
+    # Step back: inherited methods are probably fine...
+
+    # BSON::Document inherits from Hash. Due to the way Ruby works, non-bang methods
+    # (example: select, )
+    # when called
+    #
+    #
+    # The general rules are:
+    # - If the method returns a Hash instance then all nested BSON::Documents must also
+    #   be returned as Hash instances (example: #transform_values).
+    # - If the method modifies and returns self (i.e. the BSON::Document instance itself),
+    #   then the method must actually do the expected behavior (example: #transform_values!).
+    #   Otherwise, if the method cannot return both self AND perform the expected behavior,
+    #   then it raises an ArgumentError (#symbolize_keys!, #deep_symbolize_keys!)
+    # - If the method returns anything else besides a Hash or itself (example: #each, #pluck, etc.)
+    #   then any nested BSON::Documents should be returned as-is (not converted to Hash).
+    #   Such methods can be assumed to work correctly and do not need to be tested here.
+
+    # Returns a new hash with top-level keys as symbols and nested
+    # keys as strings.
+    #
+    # @return [ Hash ] A new hash with top-level keys as symbols.
+    # def symbolize_keys
+    #   to_h.symbolize_keys
+    # end
+    #
+    # def transform_keys(&block)
+    #   hash = to_h
+    #   block_given? ? hash.send(:transform_keys, &block) : hash
+    # end
+    #
+    # def transform_values
+    #   hash = to_h
+    #   block_given? ? hash.send(:transform_values, &block) : hash
+    # end
+    #
 
     # Override the Hash implementation of to_bson_normalized_value.
     #

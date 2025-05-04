@@ -21,6 +21,23 @@ require "bson/environment"
 # @since 0.0.0
 module BSON
 
+  # Create a new object id from a string using ObjectId.from_string.
+  # If the object is already a BSON::ObjectId, return the object.
+  #
+  # @example Create an object id from the string.
+  #   BSON::ObjectId(id)
+  #
+  # @param [ String | BSON::ObjectId ] object The object to create the id from.
+  #
+  # @raise [ BSON::Error::InvalidObjectId ] If the provided string is invalid.
+  #
+  # @return [ BSON::ObjectId ] The new object id.
+  #
+  # @see ObjectId.from_string
+  def self.ObjectId(object)
+    self::ObjectId.try_convert(object)
+  end
+
   # Create a new object id from a string using ObjectId.from_string
   #
   # @example Create an object id from the string.
@@ -33,8 +50,8 @@ module BSON
   # @return [ BSON::ObjectId ] The new object id.
   #
   # @see ObjectId.from_string
-  def self.ObjectId(string)
-    self::ObjectId.from_string(string)
+  def self.Document(hash)
+    self::Document.try_convert(hash)
   end
 
   # Constant for binary string encoding.
@@ -103,12 +120,12 @@ require "bson/version"
 #
 # @since 2.0.0
 begin
-  if BSON::Environment.jruby?
-    require "bson-ruby.jar"
-    JRuby::Util.load_ext("org.bson_ruby.NativeService")
-  else
-    require "bson_native"
-  end
+  # if BSON::Environment.jruby?
+  #   require "bson-ruby.jar"
+  #   JRuby::Util.load_ext("org.bson_ruby.NativeService")
+  # else
+  #   require "bson_native"
+  # end
 rescue LoadError => e
   $stderr.puts("Failed to load the necessary extensions: #{e.class}: #{e}")
   raise
