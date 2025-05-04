@@ -20,47 +20,48 @@ require 'spec_helper'
 describe BSON::Document do
 
   describe '.try_convert' do
-    context 'when the object is convertible to a hash' do
-      let(:hash) do
-        { 'key' => 'value' }
-      end
+    let(:object) do
+      { 'key1' => 'value1' }
+    end
 
-      it 'converts the object to a document' do
-        doc = described_class.try_convert(hash)
-        expect(doc).to be_a(described_class)
-        expect(doc).to eq(described_class.new('key' => 'value'))
-      end
+    let(:document) do
+      described_class.try_convert(object)
+    end
+
+    it 'converts the object to a document' do
+      expect(document).to be_a(described_class)
+      expect(document).to eq(described_class.new('key1' => 'value1'))
     end
 
     context 'when the object is contains a nested hash' do
-      let(:hash) do
+      let(:object) do
         { 'key1' => 'value1', 'nested' => { 'key2' => 'value2' } }
       end
 
-      it 'returns a document' do
-        expect(described_class.try_convert(hash)).to be_a(described_class)
-      end
-
       it 'converts the nested hash to a document' do
-        nested = described_class.try_convert(hash)['nested']
+        nested = document['nested']
         expect(nested).to be_a(described_class)
         expect(nested).to eq(described_class.new('key2' => 'value2'))
       end
     end
 
     context 'when the object is a BSON::Document' do
-      let(:document) do
+      let(:object) do
         described_class.new('key1' => 'value1')
       end
 
       it 'returns the document itself self' do
-        expect(described_class.try_convert(document)).to eq(document)
+        expect(document).to eq(object)
       end
     end
 
     context 'when the object is not convertible to a hash' do
+      let(:object) do
+        'not a hash'
+      end
+
       it 'returns nil' do
-        expect(described_class.try_convert('not a hash')).to be_nil
+        expect(document).to be_nil
       end
     end
   end

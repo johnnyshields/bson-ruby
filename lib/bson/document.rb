@@ -41,7 +41,6 @@ module BSON
   class Document < ::Hash
 
     class << self
-
       def try_convert(hash)
         return hash if hash.is_a?(BSON::Document)
 
@@ -265,24 +264,22 @@ module BSON
 
     alias :update :merge!
 
-    if instance_methods.include?(:dig)
-      # Retrieves the value object corresponding to the each key objects repeatedly.
-      # Will normalize symbol keys into strings.
-      #
-      # @example Get value from nested sub-documents, handling missing levels.
-      #   document # => { :key1 => { "key2" => "value"}}
-      #   document.dig(:key1, :key2) # => "value"
-      #   document.dig("key1", "key2") # => "value"
-      #   document.dig("foo", "key2") # => nil
-      #
-      # @param [ Array<String, Symbol> ] *keys Keys, which constitute a "path" to the nested value.
-      #
-      # @return [ Object, NilClass ] The requested value or nil.
-      #
-      # @since 3.0.0
-      def dig(*keys)
-        super(*keys.map{|key| convert_key(key)})
-      end
+    # Retrieves the value object corresponding to the each key objects repeatedly.
+    # Will normalize symbol keys into strings.
+    #
+    # @example Get value from nested sub-documents, handling missing levels.
+    #   document # => { :key1 => { "key2" => "value"}}
+    #   document.dig(:key1, :key2) # => "value"
+    #   document.dig("key1", "key2") # => "value"
+    #   document.dig("foo", "key2") # => nil
+    #
+    # @param [ Array<String, Symbol> ] *keys Keys, which constitute a "path" to the nested value.
+    #
+    # @return [ Object, NilClass ] The requested value or nil.
+    #
+    # @since 3.0.0
+    def dig(*keys)
+      super(*keys.map { |key| convert_key(key) })
     end
 
     # Slices a document to include only the given keys.
@@ -417,77 +414,6 @@ module BSON
     def deep_symbolize_keys!
       raise ArgumentError, 'deep_symbolize_keys! is not supported on BSON::Document instances. Instead call #deep_symbolize_keys which returns a new Hash object.'
     end
-    # invert
-    # rehash
-    # delete
-    # delete_if
-    # clear
-    # shift
-    # merge
-    # merge!
-    # (merge, as arg)
-    # (merge!, as arg)
-    # update (alias)
-    # reverse_merge
-    # reverse_merge!
-    # reject
-    # reject!
-    # select
-    # select!
-    # filter (alias)
-    # filter! (alias)
-    # keep_if
-    # compact
-    # compact!
-    # compact_blank
-    # compact_blank!
-    # transform_keys!
-    # transform_values!
-    # .try_convert(obj)
-    # .[]
-    # .()
-    # deep_merge
-    # deep_merge!
-    # slice
-    # slice!
-
-
-    # Step back: inherited methods are probably fine...
-
-    # BSON::Document inherits from Hash. Due to the way Ruby works, non-bang methods
-    # (example: select, )
-    # when called
-    #
-    #
-    # The general rules are:
-    # - If the method returns a Hash instance then all nested BSON::Documents must also
-    #   be returned as Hash instances (example: #transform_values).
-    # - If the method modifies and returns self (i.e. the BSON::Document instance itself),
-    #   then the method must actually do the expected behavior (example: #transform_values!).
-    #   Otherwise, if the method cannot return both self AND perform the expected behavior,
-    #   then it raises an ArgumentError (#symbolize_keys!, #deep_symbolize_keys!)
-    # - If the method returns anything else besides a Hash or itself (example: #each, #pluck, etc.)
-    #   then any nested BSON::Documents should be returned as-is (not converted to Hash).
-    #   Such methods can be assumed to work correctly and do not need to be tested here.
-
-    # Returns a new hash with top-level keys as symbols and nested
-    # keys as strings.
-    #
-    # @return [ Hash ] A new hash with top-level keys as symbols.
-    # def symbolize_keys
-    #   to_h.symbolize_keys
-    # end
-    #
-    # def transform_keys(&block)
-    #   hash = to_h
-    #   block_given? ? hash.send(:transform_keys, &block) : hash
-    # end
-    #
-    # def transform_values
-    #   hash = to_h
-    #   block_given? ? hash.send(:transform_values, &block) : hash
-    # end
-    #
 
     # Override the Hash implementation of to_bson_normalized_value.
     #
