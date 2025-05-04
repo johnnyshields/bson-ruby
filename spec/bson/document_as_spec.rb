@@ -19,11 +19,11 @@ require 'spec_helper'
 describe BSON::Document do
   require_active_support
 
-  describe '#symbolize_keys' do
-    let(:document) do
-      described_class.new('key1' => 'value1', 'key2' => 'value2')
-    end
+  let(:document) do
+    described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
+  end
 
+  describe '#symbolize_keys' do
     let(:result) do
       document.symbolize_keys
     end
@@ -34,12 +34,12 @@ describe BSON::Document do
     end
 
     it 'converts string keys to symbols' do
-      expect(result).to eq({ key1: 'value1', key2: 'value2' })
+      expect(result).to eq({ key1: 'value1', key2: 'value2', key3: 'value3' })
     end
 
     it 'does not modify the original document' do
       result
-      expect(document).to eq(described_class.new('key1' => 'value1', 'key2' => 'value2'))
+      expect(document).to eq(described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3'))
     end
 
     context 'with nested documents' do
@@ -63,10 +63,6 @@ describe BSON::Document do
   end
 
   describe '#symbolize_keys!' do
-    let(:document) do
-      described_class.new('key1' => 'value1', 'key2' => 'value2')
-    end
-
     it 'raises ArgumentError' do
       expect { document.symbolize_keys! }.to raise_error(ArgumentError, /symbolize_keys! is not supported/)
     end
@@ -108,7 +104,7 @@ describe BSON::Document do
 
   describe '#stringify_keys' do
     let(:document) do
-      described_class.new(:key1 => 'value1', 'key2' => 'value2')
+      described_class.new(1 => 'value1', 'key2' => { 3 => :value3 })
     end
 
     let(:result) do
@@ -119,21 +115,34 @@ describe BSON::Document do
       expect(result).to be_a(described_class)
       expect(result).to_not be(document)
     end
+
+    it 'modifies only the top-level document keys' do
+      expect(result).to eq('1' => 'value1', 'key2' => { 3 => :value3 })
+    end
   end
 
   describe '#stringify_keys!' do
     let(:document) do
-      described_class.new(:key1 => 'value1', 'key2' => 'value2')
+      described_class.new(1 => 'value1', 'key2' => { 3 => :value3 })
+    end
+
+    let(:result) do
+      document.stringify_keys!
     end
 
     it 'returns self' do
-      expect(document.stringify_keys).to eq document
+      expect(result).to be(document)
+    end
+
+    it 'modifies only the top-level document keys' do
+      result
+      expect(document).to eq('1' => 'value1', 'key2' => { 3 => :value3 })
     end
   end
 
   describe '#deep_stringify_keys' do
     let(:document) do
-      described_class.new(:key1 => 'value1', :key2 => described_class.new(:inner => 'value'))
+      described_class.new(1 => 'value1', 'key2' => { 3 => :value3 })
     end
 
     let(:result) do
@@ -145,7 +154,7 @@ describe BSON::Document do
     end
 
     it 'converts all keys to strings at all levels' do
-      expect(result).to eq({ 'key1' => 'value1', 'key2' => { 'inner' => 'value' } })
+      expect(result).to eq({ '1' => 'value1', 'key2' => { '3' => :value3 } })
     end
 
     it 'converts nested documents to Hash' do
@@ -155,33 +164,36 @@ describe BSON::Document do
 
   describe '#deep_stringify_keys!' do
     let(:document) do
-      described_class.new(:key1 => 'value1', 'key2' => 'value2')
+      described_class.new(1 => 'value1', 'key2' => { 3 => :value3 })
+    end
+
+    let(:result) do
+      document.deep_stringify_keys!
     end
 
     it 'returns self' do
-      expect(document.stringify_keys).to eq document
+      expect(result).to be(document)
+    end
+
+    it 'modifies only the all levels of document keys' do
+      result
+      expect(document).to eq('1' => 'value1', 'key2' => { '3' => :value3 })
     end
   end
 
   describe '#slice!' do
-    context 'with a single-level document' do
-      let(:document) do
-        described_class.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
-      end
+    let(:result) do
+      document.slice!('key1', 'key3')
+    end
 
-      let(:result) do
-        document.slice!('key1', 'key3')
-      end
+    it 'returns a new BSON::Document with removed keys' do
+      expect(result).to be_a(described_class)
+      expect(result).to eq(described_class.new('key2' => 'value2'))
+    end
 
-      it 'returns a new BSON::Document with removed keys' do
-        expect(result).to be_a(described_class)
-        expect(result).to eq(described_class.new('key2' => 'value2'))
-      end
-
-      it 'modifies the original document' do
-        result
-        expect(document).to eq(described_class.new('key1' => 'value1', 'key3' => 'value3'))
-      end
+    it 'modifies the original document' do
+      result
+      expect(document).to eq(described_class.new('key1' => 'value1', 'key3' => 'value3'))
     end
 
     context 'when some keys do not exist' do
@@ -760,6 +772,241 @@ describe BSON::Document do
       it 'replaces the nested structure with the new type' do
         result
         expect(document['key']).to eq('now a string')
+      end
+    end
+  end
+
+  describe '#extract!' do
+    context 'with string keys' do
+      let(:extracted) do
+        document.extract!('key1', 'key3')
+      end
+
+      it 'returns a document with extracted pairs' do
+        expect(extracted).to be_a(described_class)
+        expect(extracted).to eq(described_class.new('key1' => 'value1', 'key3' => 'value3'))
+      end
+
+      it 'removes extracted pairs from original document' do
+        extracted
+        expect(document).to eq(described_class.new('key2' => 'value2'))
+      end
+    end
+
+    context 'with symbol keys' do
+      let(:extracted) do
+        document.extract!(:key1, :key3)
+      end
+
+      it 'returns a document with extracted pairs' do
+        expect(extracted).to be_a(described_class)
+        expect(extracted).to eq(described_class.new('key1' => 'value1', 'key3' => 'value3'))
+      end
+    end
+
+    context 'with missing keys' do
+      let(:extracted) do
+        document.extract!('key1', 'missing')
+      end
+
+      it 'ignores missing keys' do
+        expect(extracted).to eq(described_class.new('key1' => 'value1'))
+      end
+    end
+
+    context 'with nested documents' do
+      let(:document) do
+        described_class.new(
+          'key1' => 'value1',
+          'nested' => described_class.new('inner1' => 'nested_value1', 'inner2' => 'nested_value2')
+        )
+      end
+
+      let(:extracted) do
+        document.extract!('key1', 'nested')
+      end
+
+      it 'returns nested documents as BSON::Documents' do
+        expect(extracted['nested']).to be_a(described_class)
+      end
+    end
+  end
+
+  describe '#without' do
+    context 'with string keys' do
+      let(:result) do
+        document.without('key1', 'key3')
+      end
+
+      it 'returns a document without the specified keys' do
+        expect(result).to be_a(described_class)
+        expect(result).to eq(described_class.new('key2' => 'value2'))
+      end
+
+      it 'does not modify the original document' do
+        result
+        expect(document).to eq(described_class.new(
+          'key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3'
+        ))
+      end
+    end
+
+    context 'with symbol keys' do
+      let(:result) do
+        document.without(:key1, :key3)
+      end
+
+      it 'returns a document without the specified keys' do
+        expect(result).to eq(described_class.new('key2' => 'value2'))
+      end
+    end
+
+    context 'with missing keys' do
+      let(:result) do
+        document.without('key1', 'missing')
+      end
+
+      it 'ignores missing keys' do
+        expect(result).to eq(described_class.new('key2' => 'value2', 'key3' => 'value3'))
+      end
+    end
+  end
+
+  describe '#with_indifferent_access' do
+    let(:document) do
+      described_class.new('key1' => 'value1', :key2 => 'value2')
+    end
+
+    let(:result) do
+      document.with_indifferent_access
+    end
+
+    it 'returns a HashWithIndifferentAccess' do
+      expect(result).to be_a(ActiveSupport::HashWithIndifferentAccess)
+    end
+
+    it 'allows access with both strings and symbols' do
+      expect(result['key1']).to eq('value1')
+      expect(result[:key1]).to eq('value1')
+      expect(result['key2']).to eq('value2')
+      expect(result[:key2]).to eq('value2')
+    end
+
+    context 'with nested documents' do
+      let(:document) do
+        described_class.new(
+          'key1' => 'value1',
+          'nested' => described_class.new('inner' => 'value')
+        )
+      end
+
+      let(:result) do
+        document.with_indifferent_access
+      end
+
+      it 'converts nested documents to HashWithIndifferentAccess' do
+        expect(result[:nested]).to be_a(ActiveSupport::HashWithIndifferentAccess)
+        expect(result[:nested][:inner]).to eq('value')
+        expect(result['nested']['inner']).to eq('value')
+      end
+    end
+  end
+
+  describe '#compact_blank' do
+    let(:document) do
+      described_class.new(
+        'key1' => 'value1',
+        'key2' => '',
+        'key3' => nil,
+        'key4' => [],
+        'key5' => {}
+      )
+    end
+
+    let(:result) do
+      document.compact_blank
+    end
+
+    it 'returns a BSON::Document' do
+      expect(result).to be_a(described_class)
+    end
+
+    it 'removes blank values' do
+      expect(result.keys).to eq(['key1'])
+      expect(result['key1']).to eq('value1')
+    end
+
+    it 'does not modify the original document' do
+      result
+      expect(document.keys).to eq(%w[key1 key2 key3 key4 key5])
+    end
+
+    context 'with nested documents' do
+      let(:document) do
+        described_class.new(
+          'key1' => 'value1',
+          'nested' => described_class.new('inner1' => '', 'inner2' => 'value')
+        )
+      end
+
+      let(:result) do
+        document.compact_blank
+      end
+
+      it 'does not compact blank values in nested documents' do
+        expect(result['nested']['inner1']).to eq('')
+        expect(result['nested']['inner2']).to eq('value')
+      end
+
+      it 'preserves BSON::Document type for nested documents' do
+        expect(result['nested']).to be_a(described_class)
+      end
+    end
+  end
+
+  describe '#compact_blank!' do
+    let(:document) do
+      described_class.new(
+        'key1' => 'value1',
+        'key2' => '',
+        'key3' => nil,
+        'key4' => [],
+        'key5' => {}
+      )
+    end
+
+    context 'when changes are made' do
+      let(:result) do
+        document.compact_blank!
+      end
+
+      it 'returns self' do
+        expect(result).to be(document)
+      end
+
+      it 'removes blank values' do
+        result
+        expect(document.keys).to eq(['key1'])
+        expect(document['key1']).to eq('value1')
+      end
+    end
+
+    context 'when no changes are made' do
+      let(:document) do
+        described_class.new('key1' => 'value1', 'key2' => 'value2')
+      end
+
+      let(:result) do
+        document.compact_blank!
+      end
+
+      it 'returns self' do
+        expect(result).to be(document)
+      end
+
+      it 'does not modify the original document' do
+        result
+        expect(document).to eq(described_class.new('key1' => 'value1', 'key2' => 'value2'))
       end
     end
   end
