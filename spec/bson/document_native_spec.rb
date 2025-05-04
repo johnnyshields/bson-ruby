@@ -1,5 +1,5 @@
+# frozen_string_literal: true
 # rubocop:todo all
-
 # Copyright (C) 2009-2020 MongoDB Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -94,6 +94,7 @@ describe BSON::Document do
 
       it 'returns a Hash' do
         expect(hash).to be_a(Hash)
+        expect(hash).to_not be_a(BSON::Document)
       end
 
       it 'returns a hash with the same keys and values' do
@@ -110,12 +111,10 @@ describe BSON::Document do
         document.to_h
       end
 
-      it 'returns a Hash' do
-        expect(hash).to be_a(Hash)
-      end
-
       it 'converts nested documents to hashes' do
-        expect(hash['key2']).to be_a(Hash)
+        nested = hash['key2']
+        expect(nested).to be_a(Hash)
+        expect(nested).to_not be_a(BSON::Document)
       end
 
       it 'preserves the nested structure' do
@@ -130,6 +129,11 @@ describe BSON::Document do
 
       let(:hash) do
         document.to_h { |k, v| [k.to_sym, v.upcase] }
+      end
+
+      it 'returns a Hash' do
+        expect(hash).to be_a(Hash)
+        expect(hash).to_not be_a(BSON::Document)
       end
 
       it 'applies the block to each key-value pair' do
@@ -153,6 +157,7 @@ describe BSON::Document do
 
     it 'returns a hash with the same keys and values' do
       expect(hash).to be_a(Hash)
+      expect(hash).to_not be_a(BSON::Document)
       expect(hash).to eq({ 'key1' => 'value1', 'key2' => 'value2' })
     end
   end
@@ -166,8 +171,9 @@ describe BSON::Document do
       document.invert
     end
 
-    it 'returns a BSON::Document' do
+    it 'returns a new BSON::Document' do
       expect(inverted).to be_a(BSON::Document)
+      expect(inverted).not_to be(document)
     end
 
     it 'inverts keys and values' do
@@ -189,6 +195,7 @@ describe BSON::Document do
 
       it 'does convert nested documents' do
         expect(nested_key).to be_a(BSON::Document)
+        expect(nested_key).to eq(document['key2'])
       end
 
       it 'does not attempt to invert nested documents recursively' do
@@ -341,7 +348,7 @@ describe BSON::Document do
       expect(pair).to eq(['key1', 'value1'])
     end
 
-    it 'removes the first key-value pair' do
+    it 'removes the first key-value pair from the document' do
       document.shift
       expect(document).to eq(BSON::Document.new('key2' => 'value2'))
     end
@@ -371,11 +378,8 @@ describe BSON::Document do
         document.merge(other)
       end
 
-      it 'returns a BSON::Document' do
+      it 'returns a new BSON::Document' do
         expect(result).to be_a(BSON::Document)
-      end
-
-      it 'is not the same object as the original' do
         expect(result).not_to be(document)
       end
 
@@ -876,9 +880,9 @@ describe BSON::Document do
       document.transform_keys { |key| key.upcase }
     end
 
-    it 'returns a Hash, not a BSON::Document' do
-      expect(result).to be_a(Hash)
-      expect(result).not_to be_a(BSON::Document)
+    it 'returns a new BSON::Document' do
+      expect(result).to be_a(BSON::Document)
+      expect(result).not_to be(document)
     end
 
     it 'transforms all keys according to the block' do
@@ -903,9 +907,8 @@ describe BSON::Document do
         expect(result).to eq({ 'OUTER' => { 'inner' => 'value' } })
       end
 
-      it 'converts nested BSON::Documents to plain Hashes' do
-        expect(result['OUTER']).to be_a(Hash)
-        expect(result['OUTER']).not_to be_a(BSON::Document)
+      it 'keeps nested elements as BSON::Documents' do
+        expect(result['OUTER']).to be_a(BSON::Document)
       end
     end
   end
@@ -926,7 +929,7 @@ describe BSON::Document do
 
       it 'transforms all keys according to the block' do
         result
-        expect(document.keys).to eq(['KEY1', 'KEY2'])
+        expect(document.keys).to eq(%w[KEY1 KEY2])
       end
     end
 
@@ -949,6 +952,36 @@ describe BSON::Document do
         expect(document['OUTER']).to be_a(BSON::Document)
       end
     end
+
+    context 'transforming to keys to String' do
+      let(:document) do
+        BSON::Document.new('key' => :a, 1 => :b)
+      end
+
+      let(:action) do
+        document.transform_keys!(&:to_s)
+      end
+
+      it 'transforms keys to String' do
+        action
+        expect(document).to eq('key' => :a, '1' => :b)
+      end
+    end
+
+    context 'transforming to keys to Symbol' do
+      let(:document) do
+        BSON::Document.new('key' => :a, 1 => :b)
+      end
+
+      let(:action) do
+        document.transform_keys! { |key| key.is_a?(String) ? key.to_sym : key }
+      end
+
+      it 'transforms keys to String' do
+        action
+        expect(document).to eq('key' => :a, 1 => :b)
+      end
+    end
   end
 
   describe '#transform_values' do
@@ -960,9 +993,9 @@ describe BSON::Document do
       document.transform_values { |value| value.upcase }
     end
 
-    it 'returns a Hash, not a BSON::Document' do
-      expect(result).to be_a(Hash)
-      expect(result).not_to be_a(BSON::Document)
+    it 'returns a new BSON::Document' do
+      expect(result).to be_a(BSON::Document)
+      expect(result).not_to be(document)
     end
 
     it 'transforms all values according to the block' do
@@ -980,11 +1013,34 @@ describe BSON::Document do
       end
 
       let(:result) do
-        document.transform_values { |value| value.is_a?(BSON::Document) ? 'transformed' : value }
+        document.transform_values { |value| value }
+      end
+
+      it 'preserves nested documents' do
+        original_nested = document['key1']
+        nested = result['key1']
+        expect(nested).to be_a(BSON::Document)
+        expect(nested).to eq(original_nested)
+      end
+    end
+
+    context 'transforming nested documents' do
+      let(:document) do
+        BSON::Document.new('key1' => BSON::Document.new('inner' => 'value'))
+      end
+
+      let(:result) do
+        document.transform_values! { |value| value.is_a?(BSON::Document) ? { foo: :bar, 1 => :a } : value }
       end
 
       it 'allows transforming nested documents' do
-        expect(result).to eq({ 'key1' => 'transformed' })
+        expect(result).to eq(BSON::Document.new('key1' => { 'foo' => :bar, 1 => :a }))
+      end
+
+      it 'converts nested values to BSON::Document' do
+        nested = result['key1']
+        expect(nested).to be_a(BSON::Document)
+        expect(nested.keys).to eq(['foo', 1])
       end
     end
   end
@@ -1012,13 +1068,38 @@ describe BSON::Document do
         BSON::Document.new('key1' => BSON::Document.new('inner' => 'value'))
       end
 
-      let(:result) do
-        document.transform_values! { |value| value.is_a?(BSON::Document) ? 'transformed' : value }
+      let(:action) do
+        document.transform_values! { |value| value }
+      end
+
+      it 'preserves nested documents' do
+        original_nested = document['key1']
+        action
+        nested = document['key1']
+        expect(nested).to be_a(BSON::Document)
+        expect(nested).to eq(original_nested)
+      end
+    end
+
+    context 'transforming nested documents' do
+      let(:document) do
+        BSON::Document.new('key1' => BSON::Document.new('inner' => 'value'))
+      end
+
+      let(:action) do
+        document.transform_values! { |value| value.is_a?(BSON::Document) ? { foo: :bar, 1 => :a } : value }
       end
 
       it 'allows transforming nested documents' do
-        result
-        expect(document).to eq(BSON::Document.new('key1' => 'transformed'))
+        action
+        expect(document).to eq(BSON::Document.new('key1' => { 'foo' => :bar, 1 => :a }))
+      end
+
+      it 'converts nested values to BSON::Document' do
+        action
+        nested = document['key1']
+        expect(nested).to be_a(BSON::Document)
+        expect(nested.keys).to eq(['foo', 1])
       end
     end
   end

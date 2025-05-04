@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # rubocop:todo all
 # Copyright (C) 2021 MongoDB Inc.
 #
@@ -18,94 +19,6 @@ require "spec_helper"
 # BSON::Document ActiveSupport extensions
 describe BSON::Document do
   require_active_support
-
-  describe '#symbolize_keys' do
-    context 'string keys' do
-      let(:doc) do
-        described_class.new('foo' => 'bar')
-      end
-
-      it 'works correctly' do
-        doc.symbolize_keys.should == {foo: 'bar'}
-      end
-    end
-  end
-
-  describe '#symbolize_keys!' do
-    context 'string keys' do
-      let(:doc) do
-        described_class.new('foo' => 'bar')
-      end
-
-      it 'raises ArgumentError' do
-        lambda do
-          doc.symbolize_keys!
-        end.should raise_error(ArgumentError, /symbolize_keys! is not supported on BSON::Document instances/)
-      end
-    end
-  end
-
-  describe '#slice!' do
-    context 'with a single-level document' do
-      let(:document) do
-        BSON::Document.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
-      end
-
-      let(:result) do
-        document.slice!('key1', 'key3')
-      end
-
-      it 'returns a new BSON::Document with removed keys' do
-        expect(result).to be_a(BSON::Document)
-        expect(result).to eq(BSON::Document.new('key2' => 'value2'))
-      end
-
-      it 'modifies the original document' do
-        result
-        expect(document).to eq(BSON::Document.new('key1' => 'value1', 'key3' => 'value3'))
-      end
-    end
-
-    context 'when some keys do not exist' do
-      let(:document) do
-        BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
-      end
-
-      let(:result) do
-        document.slice!('key1', 'nonexistent')
-      end
-
-      it 'returns a document with the keys that were removed' do
-        expect(result).to eq(BSON::Document.new('key2' => 'value2'))
-      end
-
-      it 'modifies the original document' do
-        result
-        expect(document).to eq(BSON::Document.new('key1' => 'value1'))
-      end
-    end
-
-    context 'with symbol keys' do
-      let(:document) do
-        BSON::Document.new(key1: 'value1', key2: 'value2')
-      end
-
-      let(:result) do
-        document.slice!(:key1)
-      end
-
-      it 'returns a document with the keys that were removed' do
-        expect(result).to eq(BSON::Document.new('key2' => 'value2'))
-      end
-
-      it 'modifies the original document' do
-        result
-        expect(document).to eq(BSON::Document.new('key1' => 'value1'))
-      end
-    end
-  end
-
-
 
   describe '#symbolize_keys' do
     let(:document) do
@@ -199,20 +112,13 @@ describe BSON::Document do
       BSON::Document.new(:key1 => 'value1', 'key2' => 'value2')
     end
 
-    it 'is an alias for #to_h' do
-      expect(document.method(:stringify_keys)).to eq(document.method(:to_h))
-    end
-
     let(:result) do
       document.stringify_keys
     end
 
-    it 'returns a Hash' do
-      expect(result).to be_a(Hash)
-    end
-
-    it 'converts all keys to strings' do
-      expect(result).to eq({ 'key1' => 'value1', 'key2' => 'value2' })
+    it 'returns a new BSON::Document' do
+      expect(result).to be_a(BSON::Document)
+      expect(result).to_not be(document)
     end
   end
 
@@ -221,30 +127,14 @@ describe BSON::Document do
       BSON::Document.new(:key1 => 'value1', 'key2' => 'value2')
     end
 
-    context 'when the document contains only string keys' do
-      let(:string_doc) do
-        BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
-      end
-
-      it 'returns self' do
-        expect(string_doc.stringify_keys!).to be(string_doc)
-      end
-    end
-
-    context 'when the document contains symbol keys' do
-      it 'raises ArgumentError' do
-        expect { document.stringify_keys! }.to raise_error(ArgumentError, /stringify_keys! is not supported/)
-      end
+    it 'returns self' do
+      expect(document.stringify_keys).to eq document
     end
   end
 
   describe '#deep_stringify_keys' do
     let(:document) do
       BSON::Document.new(:key1 => 'value1', :key2 => BSON::Document.new(:inner => 'value'))
-    end
-
-    it 'is an alias for #to_h' do
-      expect(document.method(:deep_stringify_keys)).to eq(document.method(:to_h))
     end
 
     let(:result) do
@@ -258,6 +148,10 @@ describe BSON::Document do
     it 'converts all keys to strings at all levels' do
       expect(result).to eq({ 'key1' => 'value1', 'key2' => { 'inner' => 'value' } })
     end
+
+    it 'converts nested documents to Hash' do
+      expect(result['key2']).to be_a(Hash)
+    end
   end
 
   describe '#deep_stringify_keys!' do
@@ -265,8 +159,72 @@ describe BSON::Document do
       BSON::Document.new(:key1 => 'value1', 'key2' => 'value2')
     end
 
-    it 'raises ArgumentError' do
-      expect { document.deep_stringify_keys! }.to raise_error(ArgumentError, /deep_stringify_keys! is not supported/)
+    it 'is an alias for #stringify_keys!' do
+      expect(document.method(:deep_stringify_keys!)).to eq(document.method(:stringify_keys!))
+    end
+
+    it 'returns self' do
+      expect(document.stringify_keys).to eq document
+    end
+  end
+
+  describe '#slice!' do
+    context 'with a single-level document' do
+      let(:document) do
+        BSON::Document.new('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')
+      end
+
+      let(:result) do
+        document.slice!('key1', 'key3')
+      end
+
+      it 'returns a new BSON::Document with removed keys' do
+        expect(result).to be_a(BSON::Document)
+        expect(result).to eq(BSON::Document.new('key2' => 'value2'))
+      end
+
+      it 'modifies the original document' do
+        result
+        expect(document).to eq(BSON::Document.new('key1' => 'value1', 'key3' => 'value3'))
+      end
+    end
+
+    context 'when some keys do not exist' do
+      let(:document) do
+        BSON::Document.new('key1' => 'value1', 'key2' => 'value2')
+      end
+
+      let(:result) do
+        document.slice!('key1', 'nonexistent')
+      end
+
+      it 'returns a document with the keys that were removed' do
+        expect(result).to eq(BSON::Document.new('key2' => 'value2'))
+      end
+
+      it 'modifies the original document' do
+        result
+        expect(document).to eq(BSON::Document.new('key1' => 'value1'))
+      end
+    end
+
+    context 'with symbol keys' do
+      let(:document) do
+        BSON::Document.new(key1: 'value1', key2: 'value2')
+      end
+
+      let(:result) do
+        document.slice!('key1')
+      end
+
+      it 'returns a document with the keys that were removed' do
+        expect(result).to eq(BSON::Document.new('key2' => 'value2'))
+      end
+
+      it 'modifies the original document' do
+        result
+        expect(document).to eq(BSON::Document.new('key1' => 'value1'))
+      end
     end
   end
 end

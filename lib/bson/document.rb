@@ -348,18 +348,52 @@ module BSON
 
     alias :to_hash :to_h
 
+    def invert
+      self.class.new(super)
+    end
+
+    def select
+      return enum_for(:select) unless block_given?
+
+      self.class.new(super)
+    end
+
+    alias :filter :select
+
+    def reject
+      return enum_for(:reject) unless block_given?
+
+      self.class.new(super)
+    end
+
+    def transform_keys
+      return enum_for(:transform_values) unless block_given?
+
+      self.class.new(super)
+    end
+
+    def transform_keys!
+      return enum_for(:transform_values!) unless block_given?
+
+      super { |key| convert_key(yield(key)) }
+    end
+
+    def transform_values
+      return enum_for(:transform_values) unless block_given?
+
+      self.class.new(super)
+    end
+
+    def transform_values!
+      return enum_for(:transform_values!) unless block_given?
+
+      super { |value| convert_value(yield(value)) }
+    end
+
+    # It is necessary to override this method because #stringify_keys
+    # would otherwise return a Hash.
     def stringify_keys
-      to_h.stringify_keys!
-    end
-
-    def stringify_keys!
-      self
-    end
-
-    alias :deep_stringify_keys! :stringify_keys!
-
-    def deep_stringify_keys
-      to_h.deep_stringify_keys!
+      self.class.new(super)
     end
 
     # @raise [ ArgumentError ] Indicates the method is not supported.
@@ -383,26 +417,6 @@ module BSON
     def deep_symbolize_keys!
       raise ArgumentError, 'deep_symbolize_keys! is not supported on BSON::Document instances. Instead call #deep_symbolize_keys which returns a new Hash object.'
     end
-
-
-    def invert
-      self.class.new(super)
-    end
-
-    def select
-      return super unless block_given?
-
-      self.class.new(super)
-    end
-
-    alias :filter :select
-
-    def reject
-      return super unless block_given?
-
-      self.class.new(super)
-    end
-
     # invert
     # rehash
     # delete
