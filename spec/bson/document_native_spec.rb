@@ -284,7 +284,7 @@ describe BSON::Document do
 
     context 'when a block is provided' do
       let(:value) do
-        document.delete('key1') { |key| 'default for #{key}' }
+        document.delete('key1') { |key| "default for #{key}" }
       end
 
       it 'returns the result of the block' do
