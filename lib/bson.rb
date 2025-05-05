@@ -86,6 +86,7 @@ require "bson/open_struct"
 require "bson/max_key"
 require "bson/min_key"
 require "bson/nil_class"
+require "bson/kernel"
 require "bson/object"
 require "bson/object_id"
 require "bson/regexp"
@@ -103,12 +104,12 @@ require "bson/version"
 #
 # @since 2.0.0
 begin
-  if BSON::Environment.jruby?
-    require "bson-ruby.jar"
-    JRuby::Util.load_ext("org.bson_ruby.NativeService")
-  else
-    require "bson_native"
-  end
+  # if BSON::Environment.jruby?
+  #   require "bson-ruby.jar"
+  #   JRuby::Util.load_ext("org.bson_ruby.NativeService")
+  # else
+  #   require "bson_native"
+  # end
 rescue LoadError => e
   $stderr.puts("Failed to load the necessary extensions: #{e.class}: #{e}")
   raise
