@@ -26,10 +26,6 @@ end
 
 module BSON
 
-  def Document()
-
-  end
-
   # This module provides behaviour for serializing and deserializing entire
   # BSON documents, according to the BSON specification.
   #
@@ -41,8 +37,13 @@ module BSON
   class Document < ::Hash
 
     class << self
-      def try_convert(hash)
-        return hash if hash.is_a?(BSON::Document)
+      # Attempts to convert the provided object to a BSON::Document.
+      #
+      # @param [ Object ] object The object to try to convert.
+      #
+      # @return [ BSON::Document, nil ] The converted document or nil if it cannot be converted.
+      def try_convert(object)
+        return object if object.is_a?(BSON::Document)
 
         hash = super
         BSON::Document.new(hash) if hash
@@ -52,34 +53,11 @@ module BSON
     # Get a value from the document for the provided key. Can use string or
     # symbol access, with string access being the faster of the two.
     #
-    # @overload fetch(key)
-    #   Returns a value from the hash for the given key. If the key does
-    #   not exist, raises KeyError exception.
-    #
-    # @overload fetch(key, default)
-    #   Returns a value from the hash for the given key. If the key does not
-    #   exist, returns *default*.
-    #
-    # @overload fetch(key, &block)
-    #   Returns a value from the hash for the given key. If the key does not
-    #   exist, returns the value of the block called with the key.
-    #
-    # @example Get an element for the key.
-    #   document.fetch("field")
-    #
-    # @example Get an element for the key by symbol with a default.
-    #   document.fetch(:field, 'foo')
-    #
-    # @example Get an element for the key by symbol with a block default.
-    #   document.fetch(:field) { |key| key.upcase }
-    #
-    # @param [ String, Symbol ] key The key to look up.
+    # @param [ Object ] key The key to look up.
     # @param [ Object ] default Returned value if key does not exist.
     # @yield [key] Block returning default value for the given key.
     #
     # @return [ Object ] The found value. Raises KeyError if none found.
-    #
-    # @since 4.4.0
     def fetch(key, *args, &block)
       key = convert_key(key)
       super(key, *args, &block)
@@ -88,17 +66,9 @@ module BSON
     # Get a value from the document for the provided key. Can use string or
     # symbol access, with string access being the faster of the two.
     #
-    # @example Get an element for the key.
-    #   document["field"]
-    #
-    # @example Get an element for the key by symbol.
-    #   document[:field]
-    #
-    # @param [ String, Symbol ] key The key to look up.
+    # @param [ Object ] key The key to look up.
     #
     # @return [ Object ] The found value, or nil if none found.
-    #
-    # @since 2.0.0
     def [](key)
       super(convert_key(key))
     end
@@ -119,8 +89,8 @@ module BSON
     #
     # Note that due to this conversion, the object that is stored in the
     # receiver Document may be different from the object supplied as the
-    # right hand side of the assignment. In Ruby, the result of assignment
-    # is the right hand side, not the return value of []= method.
+    # right-hand side of the assignment. In Ruby, the result of assignment
+    # is the right-hand side, not the return value of []= method.
     # Because of this, modifying the result of assignment generally does not
     # work as intended:
     #
@@ -147,28 +117,22 @@ module BSON
     #       @doc[:foo] ||= calculation and @doc[:foo]
     #     end
     #
-    # @example Set a value on the document.
-    #   document[:test] = "value"
-    #
-    # @param [ String, Symbol ] key The key to update.
+    # @param [ Object ] key The key to update.
     # @param [ Object ] value The value to update.
     #
     # @return [ Object ] The updated value.
-    #
-    # @since 3.0.0
     def []=(key, value)
       super(convert_key(key), convert_value(value))
     end
 
-    # Returns true if the given key is present in the document.  Will normalize
+    alias :store :[]=
+
+    # Returns true if the given key is present in the document. Will normalize
     # symbol keys into strings.
-    #
-    # @example Test if a key exists using a symbol
-    #   document.has_key?(:test)
     #
     # @param [ Object ] key The key to check for.
     #
-    # @return [ true, false]
+    # @return [ true, false ] Whether the key exists in the document.
     #
     # @since 4.0.0
     def has_key?(key)
@@ -179,22 +143,57 @@ module BSON
     alias :key?     :has_key?
     alias :member?  :has_key?
 
-    # Returns true if the given value is present in the document.  Will normalize
+    # Returns true if the given value is present in the document. Will normalize
     # symbols into strings.
     #
-    # @example Test if a key exists using a symbol
-    #   document.has_value?(:test)
+    # @param [ Object ] value The value to check for.
     #
-    # @param [ Object ] value THe value to check for.
-    #
-    # @return [ true, false]
+    # @return [ true, false ] Whether the value exists in the document.
     #
     # @since 4.0.0
     def has_value?(value)
       super(convert_value(value))
     end
 
-    alias :value :has_value?
+    alias :value? :has_value?
+
+    # Gets the values for the given keys.
+    #
+    # @param [ Array<Object> ] keys The keys to retrieve values for.
+    #
+    # @return [ Array<Object> ] The values for the given keys.
+    def values_at(*keys)
+      keys.map { |key| self[key] }
+    end
+
+    # Fetches the values for the given keys.
+    #
+    # @param [ Array<Object> ] keys The keys to fetch values for.
+    # @yield [ key ] A block to execute when a key is not found.
+    #
+    # @return [ Array<Object> ] The values for the given keys.
+    #
+    # @raise [ KeyError ] If a key is not found and no block is given.
+    def fetch_values(*keys, &block)
+      keys.map do |key|
+        if block_given? && !key?(key)
+          yield(convert_key(key))
+        else
+          fetch(key)
+        end
+      end
+    end
+
+    # Searches for a key-value pair with the given key and returns
+    # the first matching pair found as a two-element array.
+    #
+    # @param [ Object ] key The key to search for.
+    #
+    # @return [ Array, nil ] A [key, value] pair, or nil if not found.
+    def assoc(key)
+      pair = super(convert_key(key))
+      pair ? [pair[0], pair[1]] : nil
+    end
 
     # Deletes the key-value pair and returns the value from the document
     # whose key is equal to key.
@@ -202,12 +201,10 @@ module BSON
     # block is given and the key is not found, pass in the key and return the
     # result of block.
     #
-    # @example Delete a key-value pair
-    #   document.delete(:test)
-    #
     # @param [ Object ] key The key of the key-value pair to delete.
+    # @yield [ key ] Optional block to execute when key is not found.
     #
-    # @return [ Object ]
+    # @return [ Object ] The value that was deleted or the default result.
     #
     # @since 4.0.0
     def delete(key, &block)
@@ -231,10 +228,8 @@ module BSON
     # Merge this document with another document, returning a new document in
     # the process.
     #
-    # @example Merge with another document.
-    #   document.merge(name: "Bob")
-    #
     # @param [ BSON::Document, Hash ] other The document/hash to merge with.
+    # @yield [ key, old_value, new_value ] Optional block for resolving conflicts.
     #
     # @return [ BSON::Document ] The result of the merge.
     #
@@ -246,10 +241,8 @@ module BSON
     # Merge this document with another document, returning the same document in
     # the process.
     #
-    # @example Merge with another document.
-    #   document.merge(name: "Bob")
-    #
     # @param [ BSON::Document, Hash ] other The document/hash to merge with.
+    # @yield [ key, old_value, new_value ] Optional block for resolving conflicts.
     #
     # @return [ BSON::Document ] The result of the merge.
     #
@@ -267,13 +260,7 @@ module BSON
     # Retrieves the value object corresponding to the each key objects repeatedly.
     # Will normalize symbol keys into strings.
     #
-    # @example Get value from nested sub-documents, handling missing levels.
-    #   document # => { :key1 => { "key2" => "value"}}
-    #   document.dig(:key1, :key2) # => "value"
-    #   document.dig("key1", "key2") # => "value"
-    #   document.dig("foo", "key2") # => nil
-    #
-    # @param [ Array<String, Symbol> ] *keys Keys, which constitute a "path" to the nested value.
+    # @param [ Array<Object> ] keys Keys which constitute a path to the nested value.
     #
     # @return [ Object, NilClass ] The requested value or nil.
     #
@@ -284,15 +271,8 @@ module BSON
 
     # Slices a document to include only the given keys.
     # Will normalize symbol keys into strings.
-    # (this method is backported from ActiveSupport::Hash)
     #
-    # @example Get a document/hash with only the `name` and `age` fields present
-    #   document # => { _id: <ObjectId>, :name => "John", :age => 30, :location => "Earth" }
-    #   document.slice(:name, 'age') # => { "name": "John", "age" => 30 }
-    #   document.slice('name') # => { "name" => "John" }
-    #   document.slice(:foo) # => {}
-    #
-    # @param [ Array<String, Symbol> ] *keys Keys, that will be kept in the resulting document
+    # @param [ Array<Object> ] keys Keys that will be kept in the resulting document
     #
     # @return [ BSON::Document ] The document with only the selected keys
     #
@@ -310,23 +290,23 @@ module BSON
     #
     # The keys to be removed can be specified as either strings or symbols.
     #
-    # @example Get a document/hash with only the `name` and `age` fields removed
-    #   document # => { _id: <ObjectId>, :name => 'John', :age => 30, :location => 'Earth' }
-    #   document.except(:name, 'age') # => { _id: <ObjectId>, location: 'Earth' }
-    #
-    # @param [ Array<String, Symbol> ] *keys Keys, that will be removed in the resulting document
+    # @param [ Array<Object> ] keys Keys that will be removed in the resulting document.
     #
     # @return [ BSON::Document ] The document with the specified keys removed.
+    #
+    # @note Calls #delete, which calls #convert_key.
     #
     # @note This method is always defined, even if Hash already contains a
     #   definition of #except, because ActiveSupport unconditionally defines
     #   its version of #except which doesn't work for BSON::Document which
     #   causes problems if ActiveSupport is loaded after bson-ruby is.
     def except(*keys)
-      copy = dup
-      keys.each {|key| copy.delete(key)}
-      copy
+      dup.tap do |doc|
+        keys.each { |key| doc.delete(key) }
+      end
     end
+
+    alias :without :except
 
     # Recursively converts the document and all nested documents to a hash.
     #
@@ -345,59 +325,98 @@ module BSON
 
     alias :to_hash :to_h
 
+    # Inverts the document by using values as keys and vice versa.
+    #
+    # @return [ BSON::Document ] A new document with keys and values switched.
     def invert
       self.class.new(super)
     end
 
-    def select
+    # Returns a new document containing key-value pairs for which the block returns true.
+    #
+    # @yield [ key, value ] Each key-value pair in the document.
+    #
+    # @return [ BSON::Document ] A new document with matching pairs, or an Enumerator if no block given.
+    def select(&block)
       return enum_for(:select) unless block_given?
 
-      self.class.new(super)
+      dup.tap { |doc| doc.select!(&block) }
     end
 
     alias :filter :select
 
-    def reject
+    # Returns a new document excluding pairs for which the block returns true.
+    #
+    # @yield [ key, value ] Each key-value pair in the document.
+    #
+    # @return [ BSON::Document ] A new document without matching pairs, or an Enumerator if no block given.
+    def reject(&block)
       return enum_for(:reject) unless block_given?
 
-      self.class.new(super)
+      dup.tap { |doc| doc.reject!(&block) }
     end
 
-    def transform_keys
+    # Transforms all keys in the document using the given block.
+    #
+    # @yield [ key ] Each key in the document.
+    #
+    # @return [ BSON::Document ] A new document with transformed keys, or an Enumerator if no block given.
+    def transform_keys(&block)
       return enum_for(:transform_keys) unless block_given?
 
-      self.class.new(super)
+      dup.transform_keys!(&block)
     end
 
+    # Transforms all keys in the document in place using the given block.
+    #
+    # @yield [ key ] Each key in the document.
+    #
+    # @return [ BSON::Document ] The document with transformed keys, or an Enumerator if no block given.
     def transform_keys!
       return enum_for(:transform_keys!) unless block_given?
 
       super { |key| convert_key(yield(key)) }
     end
 
-    def transform_values
+    # Transforms all values in the document using the given block.
+    #
+    # @yield [ value ] Each value in the document.
+    #
+    # @return [ BSON::Document ] A new document with transformed values, or an Enumerator if no block given.
+    def transform_values(&block)
       return enum_for(:transform_values) unless block_given?
 
-      self.class.new(super)
+      dup.transform_values!(&block)
     end
 
+    # Transforms all values in the document in place using the given block.
+    #
+    # @yield [ value ] Each value in the document.
+    #
+    # @return [ BSON::Document ] The document with transformed values, or an Enumerator if no block given.
     def transform_values!
       return enum_for(:transform_values!) unless block_given?
 
       super { |value| convert_value(yield(value)) }
     end
 
-    # It is necessary to override this method because #stringify_keys
-    # would otherwise return a Hash.
+    # Returns a new hash with all keys converted to strings.
+    #
+    # @return [ BSON::Document ] A new document with string keys.
     def stringify_keys
-      self.class.new(super)
+      dup.stringify_keys!
     end
 
-    # @raise [ ArgumentError ] Indicates the method is not supported.
+    # Returns a new hash with all keys converted to symbols.
+    #
+    # @return [ Hash ] A new hash with symbol keys.
     def symbolize_keys
       to_h.symbolize_keys!
     end
 
+    # Raises an error because BSON::Document enforces string keys internally,
+    # and hence cannot be destructively modified to use symbol keys.
+    #
     # @raise [ ArgumentError ] Indicates the method is not supported.
     def symbolize_keys!
       raise ArgumentError, 'symbolize_keys! is not supported on BSON::Document instances. Instead call #symbolize_keys which returns a new Hash object.'
@@ -410,6 +429,9 @@ module BSON
       to_h.deep_symbolize_keys!
     end
 
+    # Raises an error because BSON::Document enforces string keys internally,
+    # and hence cannot be destructively modified to use symbol keys.
+    #
     # @raise [ ArgumentError ] Indicates the method is not supported.
     def deep_symbolize_keys!
       raise ArgumentError, 'deep_symbolize_keys! is not supported on BSON::Document instances. Instead call #deep_symbolize_keys which returns a new Hash object.'
@@ -420,8 +442,8 @@ module BSON
     # BSON::Document is already of the correct type and already provides
     # indifferent access to keys, hence no further conversions are necessary.
     #
-    # Attempting to perform Hash's conversion on Document instances converts
-    # DBRefs to Documents which is wrong.
+    # Attempting to perform Hash's conversion on BSON::Document instances converts
+    # DBRef to BSON::Document which is wrong.
     #
     # @return [ BSON::Document ] The normalized hash.
     def to_bson_normalized_value
